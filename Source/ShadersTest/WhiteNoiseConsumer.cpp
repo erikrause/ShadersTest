@@ -31,7 +31,7 @@ void AWhiteNoiseConsumer::BeginPlay()
 
 void AWhiteNoiseConsumer::BeginDestroy()
 {
-	//FWhiteNoiseCSManager::Get()->EndRendering();
+	FWhiteNoiseCSManager::Get()->EndRendering();
 	Super::BeginDestroy();
 
 }

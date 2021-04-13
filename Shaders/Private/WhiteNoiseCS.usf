@@ -4,7 +4,6 @@ RWTexture2D<float> OutputTexture;
 float2 Dimensions;
 uint TimeStamp;
 
-
 float hash12(float2 p)
 {
     float3 p3 = frac(float3(p.xyx) * .1031);
@@ -18,9 +17,16 @@ void MainComputeShader(uint3 Gid : SV_GroupID, //atm: -, 0...256, - in rows (Y) 
                        uint3 DTid : SV_DispatchThreadID, //atm: 0...256 in rows & columns (XY)   --> "global" thread id
                        uint3 GTid : SV_GroupThreadID, //atm: 0...256, -,- in columns (X)      --> current threadId in group / "local" threadId
                        uint GI : SV_GroupIndex)            //atm: 0...256 in columns (X)           --> "flattened" index of a thread within a group)
-{   
+{    
     float2 p = float2(DTid.xy * TimeStamp);
     float output = hash12(p);
-    
+
     OutputTexture[DTid.xy] = output;
+    
+    //uint3 id = Gid * uint3(THREADGROUPSIZE_X, THREADGROUPSIZE_Y, THREADGROUPSIZE_Z) + GTid;
+    //float2 deg = degrees(DTid.xy);
+    //float2 prob = sin(deg);
+    
+    //OutputTexture[DTid.xy / 2] = 400; //(prob.x + prob.y) / 2; //DTid.y / 32; //output;
+
 }

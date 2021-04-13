@@ -1,0 +1,125 @@
+//// MyTest.usf
+ 
+//// Simple pass-through vertex shader
+//void MainVS(
+// in float4 InPosition : ATTRIBUTE0,
+// out float4 Output : SV_POSITION
+//)
+//{
+//    Output = InPosition;
+//}
+ 
+//// Simple solid color pixel shader
+//float4 MyColor;
+//float4 MainPS() : SV_Target0
+//{
+//    return MyColor;
+//}
+
+#include "/Engine/Public/Platform.ush"
+
+//Nx = 400    // resolution x-dir
+//Ny = 100    // resolution y-dir
+float Rho0 = 100; // average density
+float Tau = 0.6; // collision timescale
+int IsInit = 1;  // bool не работает на уровне C++.
+int Nx;
+int Ny;
+
+Texture2D<float> F_in;     // F with current t
+RWTexture2D<float> F_out;  // t + 1
+
+static int NL = 9;
+//static int idxs[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8 };
+static int cxs[] = { 0, 0, 1, 1, 1, 0, -1, -1, -1 };
+static int cyx[] = { 0, 1, 1, 0, -1, -1, -1, 0, 1 };
+static float weights[] = { 4 / 9, 1 / 9, 1 / 36, 1 / 9, 1 / 36, 1 / 9, 1 / 36, 1 / 9, 1 / 36 };
+static const float PI = 3.14159265f;
+
+[numthreads(THREADGROUPSIZE_X, THREADGROUPSIZE_Y, THREADGROUPSIZE_Z)]
+void Main(uint3 DTid : SV_DispatchThreadID)
+{
+    uint x = DTid.x;
+    uint y = DTid.y * 9;    // масштабируем Y {0..100} -> Y {0..900}, т.к. в одном узле сетки надо хранить 9 значений скорости (для каждого нарпавления).
+    //uint v_id = DTid.y % 9; // остаток от деления?
+    
+    if (IsInit != 0)
+    {   
+        for (int i = 0; i < NL; i++)
+        {
+            F_out[float2(x, y + i)] = 1;
+        }
+        
+        //for (int xp = 0; xp < 400; xp++)
+        //{
+        //    for (int)
+
+        //}
+        
+        // TODO: F_out[x][y] += rand;
+        //F_out[float2(x, y + 3)] += 2 * (1 + 0.2 * cos(2 * PI * x / Nx * 4));
+        
+        //float rho = 0; // local sum for rho. TODO: rename to temp_rho.
+        //for (int i = 0; i < NL; i++)
+        //{
+        //    rho += F_out[float2(x, y + i)];
+        //}
+        
+        //for (i = 0; i < NL; i++)
+        //{
+        //    F_out[float2(x, y + i)] *= Rho0 / rho;
+        //}
+        
+        // test:
+        if (x < 50)
+        {
+            //F_out[float2(x, y + 0)] = 0;
+            //F_out[float2(x, y + 1)] = 0.1;
+            //F_out[float2(x, y + 2)] = 0.2;
+            //F_out[float2(x, y + 3)] = 0.3;
+            //F_out[float2(x, y + 4)] = 0.4;
+            //F_out[float2(x, y + 5)] = 0.5;
+            //F_out[float2(x, y + 6)] = 0.6;
+            //F_out[float2(x, y + 7)] = 0.7;
+            //F_out[float2(x, y + 8)] = 0.8;
+            for (int i = 0; i < NL; i++)
+            {
+                F_out[float2(x, y + i)] = (float) i / 10;
+            }
+        }
+        
+        
+        
+        ////// Set cylinder:
+        //bool isCylinder;
+        //if (pow((x - Nx / 4), 2) + pow((y - Ny / 2), 2) < pow((Ny / 4), 2))
+        //{
+        //    isCylinder = true;
+            
+        //    for (int i = 0; i < NL; i++)
+        //    {
+        //        F_out[float2(x, y + i)] = 0;
+        //    }
+        //}
+        //else
+        //{
+        //    isCylinder = false;
+        //}
+        
+    }
+    
+    
+    
+    //float output = DTid.xy;
+    //float4 tex = F_in[DTid.xy];
+    //if (tex.x < 1)
+    //{
+    //    tex.xyz += 0.01;
+    //}
+    //else
+    //{
+    //    tex.xyz = 0;
+    //}
+    
+    //F_out[DTid.xy] = tex;
+}

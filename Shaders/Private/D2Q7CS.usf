@@ -20,9 +20,10 @@
 
 //Nx = 400    // resolution x-dir
 //Ny = 100    // resolution y-dir
-float Rho0 = 100; // average density
-float Tau = 0.6; // collision timescale
-int IsInit = 1;  // bool не работает на уровне C++.
+float Rho0; // = 100; // average density
+float Tau; // = 0.6; // collision timescale
+
+int IsInit; // = 1;  // bool не работает на уровне C++.
 int Nx;
 int Ny;
 
@@ -45,30 +46,32 @@ void Main(uint3 DTid : SV_DispatchThreadID)
     
     if (IsInit != 0)
     {   
+        // Fill velocities with ones:
         for (int i = 0; i < NL; i++)
         {
             F_out[float2(x, y + i)] = 1;
         }
         
-        //for (int xp = 0; xp < 400; xp++)
-        //{
-        //    for (int)
-
-        //}
         
-        // TODO: F_out[x][y] += rand;
-        //F_out[float2(x, y + 3)] += 2 * (1 + 0.2 * cos(2 * PI * x / Nx * 4));
+        // TODO: F_out[x][y] += rand;   - (добавить флуктуации)
         
-        //float rho = 0; // local sum for rho. TODO: rename to temp_rho.
-        //for (int i = 0; i < NL; i++)
-        //{
-        //    rho += F_out[float2(x, y + i)];
-        //}
         
-        //for (i = 0; i < NL; i++)
-        //{
-        //    F_out[float2(x, y + i)] *= Rho0 / rho;
-        //}
+        // Задаем направление потока вправо:
+        F_out[float2(x, y + 3)] += 2 * (1 + 0.2 * cos(2 * PI * x / Nx * 4));
+        
+        
+        // Нормализуем распределение направлений частиц по глобальной плотности:
+        float rho = 0; // текущая локальная плотность.
+        for (i = 0; i < NL; i++)
+        {
+            rho += F_out[float2(x, y + i)];
+        }
+        
+        for (i = 0; i < NL; i++)
+        {
+            F_out[float2(x, y + i)] *= Rho0 / rho;
+        }
+        
         
         // test:
         if (x < 50)
@@ -90,21 +93,21 @@ void Main(uint3 DTid : SV_DispatchThreadID)
         
         
         
-        ////// Set cylinder:
-        //bool isCylinder;
-        //if (pow((x - Nx / 4), 2) + pow((y - Ny / 2), 2) < pow((Ny / 4), 2))
-        //{
-        //    isCylinder = true;
+        // Set cylinder:
+        bool isCylinder;
+        if ((pow((x - Nx / 4), 2) + pow((DTid.y - Ny / 2), 2))  < pow((Ny / 4), 2))
+        {
+            isCylinder = true;
             
-        //    for (int i = 0; i < NL; i++)
-        //    {
-        //        F_out[float2(x, y + i)] = 0;
-        //    }
-        //}
-        //else
-        //{
-        //    isCylinder = false;
-        //}
+            for (int i = 0; i < NL; i++)
+            {
+                F_out[float2(x, y + i)] = 0;
+            }
+        }
+        else
+        {
+            isCylinder = false;
+        }
         
     }
     

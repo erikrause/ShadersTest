@@ -73,27 +73,26 @@ void Main(uint3 DTid : SV_DispatchThreadID)
         }
         
         
-        // test:
-        if (x < 50)
-        {
-            //F_out[float2(x, y + 0)] = 0;
-            //F_out[float2(x, y + 1)] = 0.1;
-            //F_out[float2(x, y + 2)] = 0.2;
-            //F_out[float2(x, y + 3)] = 0.3;
-            //F_out[float2(x, y + 4)] = 0.4;
-            //F_out[float2(x, y + 5)] = 0.5;
-            //F_out[float2(x, y + 6)] = 0.6;
-            //F_out[float2(x, y + 7)] = 0.7;
-            //F_out[float2(x, y + 8)] = 0.8;
-            for (int i = 0; i < NL; i++)
-            {
-                F_out[float2(x, y + i)] = (float) i / 10;
-            }
-        }
+        //// test:
+        //if (x < 50)
+        //{
+        //    //F_out[float2(x, y + 0)] = 0;
+        //    //F_out[float2(x, y + 1)] = 0.1;
+        //    //F_out[float2(x, y + 2)] = 0.2;
+        //    //F_out[float2(x, y + 3)] = 0.3;
+        //    //F_out[float2(x, y + 4)] = 0.4;
+        //    //F_out[float2(x, y + 5)] = 0.5;
+        //    //F_out[float2(x, y + 6)] = 0.6;
+        //    //F_out[float2(x, y + 7)] = 0.7;
+        //    //F_out[float2(x, y + 8)] = 0.8;
+        //    for (int i = 0; i < NL; i++)
+        //    {
+        //        F_out[float2(x, y + i)] = (float) i / 10;
+        //    }
+        //}
         
         
-        
-        // Set cylinder:
+        // Set cylinder: TODO: set boundaries outside.
         bool isCylinder;
         if ((pow((x - Nx / 4), 2) + pow((DTid.y - Ny / 2), 2))  < pow((Ny / 4), 2))
         {

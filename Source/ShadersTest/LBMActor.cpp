@@ -56,9 +56,9 @@ void ALBMActor::Tick(float DeltaTime)
 		TArray<FFloat16Color> ColorBuffer16;
 		if (textureResource->ReadFloat16Pixels(ColorBuffer16))
 		{
-			float x = ColorBuffer16[0].R.GetFloat();
-			float y = ColorBuffer16[0].G.GetFloat();
-			float z = ColorBuffer16[0].B.GetFloat();
+			//float x = ColorBuffer16[0].R.GetFloat();
+			//float y = ColorBuffer16[0].G.GetFloat();
+			//float z = ColorBuffer16[0].B.GetFloat();
 
 			float x1 = ColorBuffer16[51].R.GetFloat();
 			float x2 = ColorBuffer16[1].R.GetFloat();
@@ -71,9 +71,27 @@ void ALBMActor::Tick(float DeltaTime)
 			{
 				arr.Add(ColorBuffer16[i].R.GetFloat());
 			}
+			TArray<float> arr2;
+			for (int i = 1500; i < 2400; i++)
+			{
+				arr2.Add(ColorBuffer16[i].R.GetFloat());
+			}
 			int prob = 0;
 			//float x1 = ColorBuffer16[1].R.GetFloat();
 			//float x1 = ColorBuffer16[1].R.GetFloat();
+
+			int Nx = 400;
+			int x = 0;
+			int y = 0;
+			TArray<float> vels;
+
+			for (int i = 0; i < 9; i++)
+			{
+				int id = x + y * 9 * Nx + i * Nx;
+				vels.Add(ColorBuffer16[id].R);
+			}
+
+			int prob2 = 0;
 		}
 	}
 }

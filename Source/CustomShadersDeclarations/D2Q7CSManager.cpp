@@ -28,6 +28,7 @@ public:
 	/// For each parameter, provide the C++ type, and the name (Same name used in HLSL code)
 	/// </summary>
 	BEGIN_SHADER_PARAMETER_STRUCT(FParameters, )
+		SHADER_PARAMETER_SAMPLER(SamplerState, F_SamplerState)
 		SHADER_PARAMETER_TEXTURE(Texture2D<float>, F_in)
 		SHADER_PARAMETER_UAV(RWTexture2D<float>, F_out)
 		SHADER_PARAMETER(float, Rho0)
@@ -143,11 +144,22 @@ void FD2Q7CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList, 
 	//Specify the resource transition, we're executing this in post scene rendering so we set it to Graphics to Compute
 	RHICmdList.TransitionResource(EResourceTransitionAccess::ERWBarrier, EResourceTransitionPipeline::EGfxToCompute, ComputeShaderOutput->GetRenderTargetItem().UAV);
 
+	// CREATE THE SAMPLER STATE RHI RESOURCE.
+	//ESamplerAddressMode SamplerAddressMode = Owner->SamplerAddressMode;
+	FSamplerStateInitializerRHI SamplerStateInitializer(ESamplerFilter::SF_Point);
+		//(ESamplerFilter)UDeviceProfileManager::Get().GetActiveProfile()->GetTextureLODSettings()->GetSamplerFilter(Owner),
+	//	SamplerAddressMode,
+	//	SamplerAddressMode,
+	//	SamplerAddressMode
+	//);
+	//SamplerStateRHI = RHICreateSamplerState(SamplerStateInitializer);
+
 	//Fill the shader parameters structure with tha cached data supplied by the client
 	FD2Q7CS::FParameters PassParameters;
+	PassParameters.F_SamplerState = RHICreateSamplerState(SamplerStateInitializer);
 	PassParameters.F_in = cachedParams.RenderTarget->GetRenderTargetResource()->TextureRHI;
 	PassParameters.F_out = ComputeShaderOutput->GetRenderTargetItem().UAV;
-	PassParameters.Rho0 = 100;
+	PassParameters.Rho0 = 0.7;
 	PassParameters.Tau = 0.6;
 	PassParameters.IsInit = 1;		//PassParameters.IsInit = cachedParams.IsInit;
 	PassParameters.Nx = cachedParams.GetRenderTargetSize().X;

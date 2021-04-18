@@ -85,10 +85,24 @@ void ALBMActor::Tick(float DeltaTime)
 			int y = 0;
 			TArray<float> vels;
 
-			for (int i = 0; i < 9; i++)
+			for (x = 0; x < 13; x++)
 			{
-				int id = x + y * 9 * Nx + i * Nx;
-				vels.Add(ColorBuffer16[id].R);
+				for (int i = 0; i < 9; i++)
+				{
+					int id = x + y * 9 * Nx + i * Nx;
+					vels.Add(ColorBuffer16[id].R);
+				}
+			}
+
+			TArray<float> vels2;
+
+			for (x = 390; x < Nx; x++)
+			{
+				for (int i = 0; i < 9; i++)
+				{
+					int id = x + y * 9 * Nx + i * Nx;
+					vels2.Add(ColorBuffer16[id].R);
+				}
 			}
 
 			int prob2 = 0;

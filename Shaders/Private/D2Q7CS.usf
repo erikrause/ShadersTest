@@ -33,82 +33,217 @@ RWTexture2D<float> F_out;  // t + 1
 static int NL = 9;
 //static int idxs[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8 };
 static int cxs[] = { 0, 0, 1, 1, 1, 0, -1, -1, -1 };
-static int cyx[] = { 0, 1, 1, 0, -1, -1, -1, 0, 1 };
+static int cys[] = { 0, 1, 1, 0, -1, -1, -1, 0, 1 };
 static float weights[] = { 4 / 9, 1 / 9, 1 / 36, 1 / 9, 1 / 36, 1 / 9, 1 / 36, 1 / 9, 1 / 36 };
 static const float PI = 3.14159265f;
+
+SamplerState F_SamplerState;
+
+//int get
 
 [numthreads(THREADGROUPSIZE_X, THREADGROUPSIZE_Y, THREADGROUPSIZE_Z)]
 void Main(uint3 DTid : SV_DispatchThreadID)
 {
-    uint x = DTid.x;
-    uint y = DTid.y * 9;    // масштабируем Y {0..100} -> Y {0..900}, т.к. в одном узле сетки надо хранить 9 значений скорости (дл€ каждого нарпавлени€).
+    //  оординаты рассчетной сетки:
+    int x = DTid.x;
+    int y = DTid.y;
+    
+    // координаты дл€ F_out:
+    int x_out = DTid.x;
+    int y_out = DTid.y * 9;    // масштабируем Y {0..100} -> Y {0..900}, т.к. в одном узле сетки надо хранить 9 значений скорости (дл€ каждого нарпавлени€).
     //uint v_id = DTid.y % 9; // остаток от делени€?
     
-    if (IsInit != 0)
-    {   
-        // Fill velocities with ones:
-        for (int i = 0; i < NL; i++)
-        {
-            F_out[float2(x, y + i)] = 1;
-        }
+    //if (IsInit != 0)
+    //{
+    //    // Fill velocities with ones:
+    //    for (int i = 0; i < NL; i++)
+    //    {
+    //        F_out[float2(x_out, y_out + i)] = 0.1;
+    //    }
         
         
-        // TODO: F_out[x][y] += rand;   - (добавить флуктуации)
+    //    // TODO: F_out[x][y] += rand;   - (добавить флуктуации)
         
         
-        // «адаем направление потока вправо:
-        F_out[float2(x, y + 3)] += 2 * (1 + 0.2 * cos(2 * PI * x / Nx * 4));
+    //    // «адаем направление потока вправо:
+    //    F_out[float2(x_out, y_out + 3)] += 2 * (1 + cos(2 * PI * x / Nx * 4));
         
         
-        // Ќормализуем распределение направлений частиц по глобальной плотности:
-        float rho = 0; // текуща€ локальна€ плотность.
-        for (i = 0; i < NL; i++)
-        {
-            rho += F_out[float2(x, y + i)];
-        }
+    //    // Ќормализуем распределение направлений частиц по глобальной плотности:
+    //    float rho = 0; // текуща€ локальна€ плотность.
+    //    for (i = 0; i < NL; i++)
+    //    {
+    //        rho += F_out[float2(x_out, y_out + i)];
+    //    }
         
-        for (i = 0; i < NL; i++)
-        {
-            F_out[float2(x, y + i)] *= Rho0 / rho;
-        }
-        
-        
-        //// test:
-        //if (x < 50)
-        //{
-        //    //F_out[float2(x, y + 0)] = 0;
-        //    //F_out[float2(x, y + 1)] = 0.1;
-        //    //F_out[float2(x, y + 2)] = 0.2;
-        //    //F_out[float2(x, y + 3)] = 0.3;
-        //    //F_out[float2(x, y + 4)] = 0.4;
-        //    //F_out[float2(x, y + 5)] = 0.5;
-        //    //F_out[float2(x, y + 6)] = 0.6;
-        //    //F_out[float2(x, y + 7)] = 0.7;
-        //    //F_out[float2(x, y + 8)] = 0.8;
-        //    for (int i = 0; i < NL; i++)
-        //    {
-        //        F_out[float2(x, y + i)] = (float) i / 10;
-        //    }
-        //}
+    //    for (i = 0; i < NL; i++)
+    //    {
+    //        F_out[float2(x_out, y_out + i)] *= Rho0 / rho;
+    //    }
         
         
-        // Set cylinder: TODO: set boundaries outside.
-        bool isCylinder;
-        if ((pow((x - Nx / 4), 2) + pow((DTid.y - Ny / 2), 2))  < pow((Ny / 4), 2))
-        {
-            isCylinder = true;
+    //    //// test:
+    //    //if (x < 50)
+    //    //{
+    //    //    //F_out[float2(x, y + 0)] = 0;
+    //    //    //F_out[float2(x, y + 1)] = 0.1;
+    //    //    //F_out[float2(x, y + 2)] = 0.2;
+    //    //    //F_out[float2(x, y + 3)] = 0.3;
+    //    //    //F_out[float2(x, y + 4)] = 0.4;
+    //    //    //F_out[float2(x, y + 5)] = 0.5;
+    //    //    //F_out[float2(x, y + 6)] = 0.6;
+    //    //    //F_out[float2(x, y + 7)] = 0.7;
+    //    //    //F_out[float2(x, y + 8)] = 0.8;
+    //    //    for (int i = 0; i < NL; i++)
+    //    //    {
+    //    //        F_out[float2(x, y + i)] = (float) i / 10;
+    //    //    }
+    //    //}
+        
+        
+    //    //// Set cylinder: TODO: set boundaries outside.
+    //    //bool isCylinder;
+    //    //if ((pow((x - Nx / 4), 2) + pow((y - Ny / 2), 2)) < pow((Ny / 4), 2))
+    //    //{
+    //    //    isCylinder = true;
             
-            for (int i = 0; i < NL; i++)
-            {
-                F_out[float2(x, y + i)] = 0;
-            }
-        }
-        else
-        {
-            isCylinder = false;
-        }
+    //    //    for (int i = 0; i < NL; i++)
+    //    //    {
+    //    //        F_out[float2(x_out, y_out + i)] = 0;
+    //    //    }
+    //    //}
+    //    //else
+    //    //{
+    //    //    isCylinder = false;
+    //    //}
         
-    }
+    //}
+    
+    
+    // TRY: Drift with lerp:
+    
+    // Drift with sample:
+    float2 uv;
+    uv.x = (x_out - 0.5) / Nx;
+    uv.y = (y_out + 3 + 0.5) / (Ny * 9);
+    //float prob = F_in.Sample(samplerState, uv);
+    F_out[float2(x_out, y_out + 3)] = F_in.SampleLevel(F_SamplerState, uv, 0);
+    
+    
+    //// Drift particles to neighbours:
+    //for (int neighbour_id = 0; neighbour_id < NL; neighbour_id++)
+    //{
+    //    int neighbour_x = x - cxs[neighbour_id];
+    //    int neighbour_y = y - cys[neighbour_id];
+
+    //    // замыкаем границы (аналог np.roll):
+    //    if ((neighbour_x < 0) || (neighbour_x >= Nx))
+    //    {
+    //        neighbour_x = abs(abs(neighbour_x) - Nx);
+    //    }
+    //    if ((neighbour_y < 0) || (neighbour_y >= Ny))
+    //    {
+    //        neighbour_y = abs(abs(neighbour_y) - Ny);
+    //    }
+
+    //    int neighbour_y_out = neighbour_y * 9;
+        
+    //    F_out[float2(neighbour_x, neighbour_y_out + neighbour_id)] = F_in[float2(x_out, y_out + neighbour_id)];
+    //}
+    
+    // Test drift:
+        
+    //// prob1:
+    //int nf = -1;
+    //int nl = 399;
+    //if (x_out == 0)
+    //{
+    //    F_out[float2(x_out + nl, y_out + 3)] = F_in[float2(x_out, y_out + 3)];
+    //}
+    //else
+    //{
+    //    F_out[float2(x_out + nf, y_out + 3)] = F_in[float2(x_out, y_out + 3)];
+    //}
+    //
+    
+    //// Main:
+    //int neighbour_x = x_out + 1;
+    //int neighbour_y = y_out;
+    
+    //if ((neighbour_x > 399) && (neighbour_x < 401))
+    //{
+    //    //lerp(1,2,)
+    //    neighbour_x = 0;
+    //    //F_out[float2(x_out, y_out + 3)] = 100;
+    //    //F_out[float2(0, y_out + 3)] = F_in[float2(x_out, y_out + 3)];
+    //}
+    ////else
+    ////{
+    ////    //neighbour_x = neighbour_x;
+    ////    //F_out[float2(neighbour_x, y_out + 3)] = F_in[float2(x_out, y_out + 3)];
+    ////}
+    //if ((neighbour_x < 0) && (neighbour_x > -2))
+    //{
+    //    //F_out[float2(x_out, y_out + 3)] = -100;
+    //    neighbour_x = 399;
+    //    //F_out[float2(x_out, y_out + 3)] = F_in[float2(neighbour_x, y_out + 3)];
+    //}
+    
+    ////if(x_out == 399)
+    ////{
+    ////    F_out[float2(x_out, y_out + 3)] = -100;
+    ////}
+    
+    ////if ((neighbour_x == 0) || (neighbour_x == Nx))
+    ////{
+    ////    neighbour_x = abs(abs(neighbour_x) - Nx);
+    ////}
+    ////if ((neighbour_y < 0) || (neighbour_y >= Ny))
+    ////{
+    ////    neighbour_y = abs(abs(neighbour_y) - Ny);
+    ////}
+     
+    //F_out[float2(neighbour_x, y_out + 3)] = F_in[float2(x_out, y_out + 3)];
+    //////F_out[float2(x_out + 1, y_out + 3)] = F_in[float2(x_out, y_out + 3)];
+    // end main.
+    
+    // TEST id:
+    //F_out[float2(x_out, y_out)] = x_out;
+    //F_out[float2(x_out, y_out + 1)] = y_out;
+    
+    //// Check is cylinder: TODO: set boundaries outside.
+    //bool isCylinder;
+    //if ((pow((x - Nx / 4), 2) + pow((y - Ny / 2), 2)) < pow((Ny / 4), 2))
+    //{
+    //    isCylinder = true;
+            
+    //    F_out[float2(x_out, y_out + i)] = 0;
+    //}
+    //else
+    //{
+    //    isCylinder = false;
+    //}
+    
+    
+    
+    
+    //for (int i = 0; i < NL; i++)
+    //{
+    //    F_out[float2(x, y + i)] = F_in[float2(x, y + i)];
+    //}
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     
     

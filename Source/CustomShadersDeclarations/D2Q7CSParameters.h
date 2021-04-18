@@ -8,7 +8,7 @@
 struct D2Q7CSParameters
 {
 	UTextureRenderTarget2D* RenderTarget;
-	bool IsInit = true;
+	int IsInit = 1;
 
 	FIntPoint GetRenderTargetSize() const
 	{

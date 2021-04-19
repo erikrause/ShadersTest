@@ -122,94 +122,35 @@ void Main(uint3 DTid : SV_DispatchThreadID)
     
     // TRY: Drift with lerp:
     
-    // Drift with sample:
-    float2 uv;
-    uv.x = (x_out - 0.5) / Nx;
-    uv.y = (y_out + 3 + 0.5) / (Ny * 9);
-    //float prob = F_in.Sample(samplerState, uv);
-    F_out[float2(x_out, y_out + 3)] = F_in.SampleLevel(F_SamplerState, uv, 0);
+    //// Drift particles with sample: - TODO: test sampling vs indexing perfomance.
+    //float2 uv;
+    //uv.x = (x_out - 0.5) / Nx;
+    //uv.y = (y_out + 3 + 0.5) / (Ny * 9);
+    ////float prob = F_in.Sample(samplerState, uv);
+    //F_out[float2(x_out, y_out + 3)] = F_in.SampleLevel(F_SamplerState, uv, 0);
     
     
-    //// Drift particles to neighbours:
-    //for (int neighbour_id = 0; neighbour_id < NL; neighbour_id++)
-    //{
-    //    int neighbour_x = x - cxs[neighbour_id];
-    //    int neighbour_y = y - cys[neighbour_id];
+    // Drift particles to neighbours:
+    for (int neighbour_id = 0; neighbour_id < NL; neighbour_id++)
+    {
+        int neighbour_x = x - cxs[neighbour_id];
+        int neighbour_y = y - cys[neighbour_id];
 
-    //    // замыкаем границы (аналог np.roll):
-    //    if ((neighbour_x < 0) || (neighbour_x >= Nx))
-    //    {
-    //        neighbour_x = abs(abs(neighbour_x) - Nx);
-    //    }
-    //    if ((neighbour_y < 0) || (neighbour_y >= Ny))
-    //    {
-    //        neighbour_y = abs(abs(neighbour_y) - Ny);
-    //    }
+        // замыкаем границы (аналог np.roll):
+        if ((neighbour_x == -1) || (neighbour_x == Nx))
+        {
+            neighbour_x = abs(abs(neighbour_x) - Nx);
+        }
+        if ((neighbour_y == -1) || (neighbour_y == Ny))
+        {
+            neighbour_y = abs(abs(neighbour_y) - Ny);
+        }
 
-    //    int neighbour_y_out = neighbour_y * 9;
+        int neighbour_y_out = neighbour_y * 9;
         
-    //    F_out[float2(neighbour_x, neighbour_y_out + neighbour_id)] = F_in[float2(x_out, y_out + neighbour_id)];
-    //}
+        F_out[float2(x_out, y_out + neighbour_id)] = F_in[float2(neighbour_x, neighbour_y_out + neighbour_id)];
+    }
     
-    // Test drift:
-        
-    //// prob1:
-    //int nf = -1;
-    //int nl = 399;
-    //if (x_out == 0)
-    //{
-    //    F_out[float2(x_out + nl, y_out + 3)] = F_in[float2(x_out, y_out + 3)];
-    //}
-    //else
-    //{
-    //    F_out[float2(x_out + nf, y_out + 3)] = F_in[float2(x_out, y_out + 3)];
-    //}
-    //
-    
-    //// Main:
-    //int neighbour_x = x_out + 1;
-    //int neighbour_y = y_out;
-    
-    //if ((neighbour_x > 399) && (neighbour_x < 401))
-    //{
-    //    //lerp(1,2,)
-    //    neighbour_x = 0;
-    //    //F_out[float2(x_out, y_out + 3)] = 100;
-    //    //F_out[float2(0, y_out + 3)] = F_in[float2(x_out, y_out + 3)];
-    //}
-    ////else
-    ////{
-    ////    //neighbour_x = neighbour_x;
-    ////    //F_out[float2(neighbour_x, y_out + 3)] = F_in[float2(x_out, y_out + 3)];
-    ////}
-    //if ((neighbour_x < 0) && (neighbour_x > -2))
-    //{
-    //    //F_out[float2(x_out, y_out + 3)] = -100;
-    //    neighbour_x = 399;
-    //    //F_out[float2(x_out, y_out + 3)] = F_in[float2(neighbour_x, y_out + 3)];
-    //}
-    
-    ////if(x_out == 399)
-    ////{
-    ////    F_out[float2(x_out, y_out + 3)] = -100;
-    ////}
-    
-    ////if ((neighbour_x == 0) || (neighbour_x == Nx))
-    ////{
-    ////    neighbour_x = abs(abs(neighbour_x) - Nx);
-    ////}
-    ////if ((neighbour_y < 0) || (neighbour_y >= Ny))
-    ////{
-    ////    neighbour_y = abs(abs(neighbour_y) - Ny);
-    ////}
-     
-    //F_out[float2(neighbour_x, y_out + 3)] = F_in[float2(x_out, y_out + 3)];
-    //////F_out[float2(x_out + 1, y_out + 3)] = F_in[float2(x_out, y_out + 3)];
-    // end main.
-    
-    // TEST id:
-    //F_out[float2(x_out, y_out)] = x_out;
-    //F_out[float2(x_out, y_out + 1)] = y_out;
     
     //// Check is cylinder: TODO: set boundaries outside.
     //bool isCylinder;

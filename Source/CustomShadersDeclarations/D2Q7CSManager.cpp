@@ -159,7 +159,7 @@ void FD2Q7CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList, 
 	PassParameters.F_SamplerState = RHICreateSamplerState(SamplerStateInitializer);
 	PassParameters.F_in = cachedParams.RenderTarget->GetRenderTargetResource()->TextureRHI;
 	PassParameters.F_out = ComputeShaderOutput->GetRenderTargetItem().UAV;
-	PassParameters.Rho0 = 0.7;
+	PassParameters.Rho0 = 100;
 	PassParameters.Tau = 0.6;
 	PassParameters.IsInit = 1;		//PassParameters.IsInit = cachedParams.IsInit;
 	PassParameters.Nx = cachedParams.GetRenderTargetSize().X;

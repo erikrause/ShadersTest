@@ -49,48 +49,25 @@ void ALBMActor::Tick(float DeltaTime)
 	//Update parameters
 	D2Q7CSParameters parameters(RenderTarget);
 	FD2Q7CSManager::Get()->UpdateParameters(parameters);
+	auto probTex = RenderTarget->GameThread_GetRenderTargetResource();
+	//probTex->
 
 	if (RenderTarget != NULL)
 	{
-		// ->GetRenderTargetResource();
-		TArray<FFloat16Color> ColorBuffer16;
-		if (textureResource->ReadFloat16Pixels(ColorBuffer16))
+		TArray<FLinearColor> colorBuffer;
+		if (textureResource->ReadLinearColorPixels(colorBuffer))
 		{
-			//float x = ColorBuffer16[0].R.GetFloat();
-			//float y = ColorBuffer16[0].G.GetFloat();
-			//float z = ColorBuffer16[0].B.GetFloat();
-
-			float x1 = ColorBuffer16[51].R.GetFloat();
-			float x2 = ColorBuffer16[1].R.GetFloat();
-			float x3 = ColorBuffer16[400].R.GetFloat();
-			float x4 = ColorBuffer16[401].R.GetFloat();
-			float x5 = ColorBuffer16[451].R.GetFloat();
-
-			TArray<float> arr;
-			for (int i = 0; i < 1600; i++)
-			{
-				arr.Add(ColorBuffer16[i].R.GetFloat());
-			}
-			TArray<float> arr2;
-			for (int i = 1500; i < 2400; i++)
-			{
-				arr2.Add(ColorBuffer16[i].R.GetFloat());
-			}
-			int prob = 0;
-			//float x1 = ColorBuffer16[1].R.GetFloat();
-			//float x1 = ColorBuffer16[1].R.GetFloat();
-
 			int Nx = 400;
 			int x = 0;
 			int y = 0;
 			TArray<float> vels;
 
-			for (x = 0; x < 13; x++)
+			for (x = 0; x < 6; x++)
 			{
 				for (int i = 0; i < 9; i++)
 				{
 					int id = x + y * 9 * Nx + i * Nx;
-					vels.Add(ColorBuffer16[id].R);
+					vels.Add(colorBuffer[id].R);
 				}
 			}
 
@@ -101,12 +78,67 @@ void ALBMActor::Tick(float DeltaTime)
 				for (int i = 0; i < 9; i++)
 				{
 					int id = x + y * 9 * Nx + i * Nx;
-					vels2.Add(ColorBuffer16[id].R);
+					vels2.Add(colorBuffer[id].R);
 				}
 			}
 
 			int prob2 = 0;
 		}
+		//// ->GetRenderTargetResource();
+		//TArray<FFloat16Color> ColorBuffer16;
+		//if (textureResource->ReadFloat16Pixels(ColorBuffer16))
+		//{
+		//	//float x = ColorBuffer16[0].R.GetFloat();
+		//	//float y = ColorBuffer16[0].G.GetFloat();
+		//	//float z = ColorBuffer16[0].B.GetFloat();
+
+		//	float x1 = ColorBuffer16[51].R.GetFloat();
+		//	float x2 = ColorBuffer16[1].R.GetFloat();
+		//	float x3 = ColorBuffer16[400].R.GetFloat();
+		//	float x4 = ColorBuffer16[401].R.GetFloat();
+		//	float x5 = ColorBuffer16[451].R.GetFloat();
+
+		//	TArray<float> arr;
+		//	for (int i = 0; i < 1600; i++)
+		//	{
+		//		arr.Add(ColorBuffer16[i].R.GetFloat());
+		//	}
+		//	TArray<float> arr2;
+		//	for (int i = 1500; i < 2400; i++)
+		//	{
+		//		arr2.Add(ColorBuffer16[i].R.GetFloat());
+		//	}
+		//	int prob = 0;
+		//	//float x1 = ColorBuffer16[1].R.GetFloat();
+		//	//float x1 = ColorBuffer16[1].R.GetFloat();
+
+		//	int Nx = 400;
+		//	int x = 0;
+		//	int y = 0;
+		//	TArray<float> vels;
+
+		//	for (x = 0; x < 13; x++)
+		//	{
+		//		for (int i = 0; i < 9; i++)
+		//		{
+		//			int id = x + y * 9 * Nx + i * Nx;
+		//			vels.Add(ColorBuffer16[id].R);
+		//		}
+		//	}
+
+		//	TArray<float> vels2;
+
+		//	for (x = 390; x < Nx; x++)
+		//	{
+		//		for (int i = 0; i < 9; i++)
+		//		{
+		//			int id = x + y * 9 * Nx + i * Nx;
+		//			vels2.Add(ColorBuffer16[id].R);
+		//		}
+		//	}
+
+		//	int prob2 = 0;
+		//}
 	}
 }
 

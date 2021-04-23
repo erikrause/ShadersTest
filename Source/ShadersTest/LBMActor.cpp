@@ -29,10 +29,10 @@ void ALBMActor::BeginPlay()
 
 	//Assuming that the static mesh is already using the material that we're targeting, we create an instance and assign it to it
 	UMaterialInstanceDynamic* MID = static_mesh->CreateAndSetMaterialInstanceDynamic(0);
-	MID->SetTextureParameterValue("InputTexture", (UTexture*)RenderTarget);
+	MID->SetTextureParameterValue("InputTexture", (UTexture*)FRenderTarget);
 	//auto prob = (*RenderTarget).get;
 
-	textureResource = (FTextureRenderTarget2DResource*)RenderTarget->Resource;
+	textureResource = (FTextureRenderTarget2DResource*)FRenderTarget->Resource;
 }
 
 void ALBMActor::BeginDestroy()
@@ -47,12 +47,12 @@ void ALBMActor::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	//Update parameters
-	D2Q7CSParameters parameters(RenderTarget);
+	D2Q7CSParameters parameters(FRenderTarget, URenderTarget);
 	FD2Q7CSManager::Get()->UpdateParameters(parameters);
-	auto probTex = RenderTarget->GameThread_GetRenderTargetResource();
+	auto probTex = FRenderTarget->GameThread_GetRenderTargetResource();
 	//probTex->
 
-	if (RenderTarget != NULL)
+	if (FRenderTarget != NULL)
 	{
 		TArray<FLinearColor> colorBuffer;
 		if (textureResource->ReadLinearColorPixels(colorBuffer))

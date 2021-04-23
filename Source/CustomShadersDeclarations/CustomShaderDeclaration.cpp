@@ -118,7 +118,7 @@ void FWhiteNoiseCSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmd
 {
 	//If there's no cached parameters to use, skip
 	//If no Render Target is supplied in the cachedParams, skip
-	if (!(bCachedParamsAreValid && cachedParams.RenderTarget))
+	if (!(bCachedParamsAreValid && cachedParams.FRenderTarget))
 	{
 		return;
 	}
@@ -127,29 +127,29 @@ void FWhiteNoiseCSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmd
 	check(IsInRenderingThread());
 
 	//If the render target is not valid, get an element from the render target pool by supplying a Descriptor
-	if (!ComputeShaderOutput.IsValid())
+	if (!FPooledRenderTarget.IsValid())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Not Valid"));
 		FPooledRenderTargetDesc ComputeShaderOutputDesc(FPooledRenderTargetDesc::Create2DDesc(cachedParams.GetRenderTargetSize(), 
-			cachedParams.RenderTarget->GetRenderTargetResource()->TextureRHI->GetFormat(), 
+			cachedParams.FRenderTarget->GetRenderTargetResource()->TextureRHI->GetFormat(), 
 			FClearValueBinding::None, 
 			TexCreate_None, 
 			TexCreate_ShaderResource | TexCreate_UAV, 
 			false));
 		ComputeShaderOutputDesc.DebugName = TEXT("WhiteNoiseCS_Output_RenderTarget");
-		GRenderTargetPool.FindFreeElement(RHICmdList, ComputeShaderOutputDesc, ComputeShaderOutput, TEXT("WhiteNoiseCS_Output_RenderTarget"));
+		GRenderTargetPool.FindFreeElement(RHICmdList, ComputeShaderOutputDesc, FPooledRenderTarget, TEXT("WhiteNoiseCS_Output_RenderTarget"));
 	}
 
 	//Unbind the previously bound render targets
 	UnbindRenderTargets(RHICmdList);
 
 	//Specify the resource transition, we're executing this in post scene rendering so we set it to Graphics to Compute
-	RHICmdList.TransitionResource(EResourceTransitionAccess::ERWBarrier, EResourceTransitionPipeline::EGfxToCompute, ComputeShaderOutput->GetRenderTargetItem().UAV);
+	RHICmdList.TransitionResource(EResourceTransitionAccess::ERWBarrier, EResourceTransitionPipeline::EGfxToCompute, FPooledRenderTarget->GetRenderTargetItem().UAV);
 
 
 	//Fill the shader parameters structure with tha cached data supplied by the client
 	FWhiteNoiseCS::FParameters PassParameters;
-	PassParameters.OutputTexture = ComputeShaderOutput->GetRenderTargetItem().UAV;
+	PassParameters.OutputTexture = FPooledRenderTarget->GetRenderTargetItem().UAV;
 	PassParameters.Dimensions = FVector2D(cachedParams.GetRenderTargetSize().X, cachedParams.GetRenderTargetSize().Y);
 	PassParameters.TimeStamp = cachedParams.TimeStamp;
 
@@ -165,7 +165,7 @@ void FWhiteNoiseCSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmd
 	start = clock();
 
 	//Copy shader's output to the render target provided by the client
-	RHICmdList.CopyTexture(ComputeShaderOutput->GetRenderTargetItem().ShaderResourceTexture, cachedParams.RenderTarget->GetRenderTargetResource()->TextureRHI, FRHICopyTextureInfo());
+	RHICmdList.CopyTexture(FPooledRenderTarget->GetRenderTargetItem().ShaderResourceTexture, cachedParams.FRenderTarget->GetRenderTargetResource()->TextureRHI, FRHICopyTextureInfo());
 
 	end = clock();
 

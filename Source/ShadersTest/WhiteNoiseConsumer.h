@@ -18,7 +18,7 @@ public:
 		UStaticMeshComponent* static_mesh;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ShaderDemo)
-		class UTextureRenderTarget2D* RenderTarget;
+		class UTextureRenderTarget2D* FRenderTarget;
 private:
 	uint32 TimeStamp;
 public:

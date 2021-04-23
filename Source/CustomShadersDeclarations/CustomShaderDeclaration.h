@@ -6,7 +6,7 @@
 //This struct act as a container for all the parameters that the client needs to pass to the Compute Shader Manager.
 struct  FWhiteNoiseCSParameters
 {
-	UTextureRenderTarget2D* RenderTarget;
+	UTextureRenderTarget2D* FRenderTarget;
 
 
 	FIntPoint GetRenderTargetSize() const
@@ -16,9 +16,9 @@ struct  FWhiteNoiseCSParameters
 
 	FWhiteNoiseCSParameters() { }
 	FWhiteNoiseCSParameters(UTextureRenderTarget2D* IORenderTarget)
-		: RenderTarget(IORenderTarget)
+		: FRenderTarget(IORenderTarget)
 	{
-		CachedRenderTargetSize = RenderTarget ? FIntPoint(RenderTarget->SizeX, RenderTarget->SizeY) : FIntPoint::ZeroValue;
+		CachedRenderTargetSize = FRenderTarget ? FIntPoint(FRenderTarget->SizeX, FRenderTarget->SizeY) : FIntPoint::ZeroValue;
 	}
 
 private:
@@ -68,7 +68,7 @@ private:
 	volatile bool bCachedParamsAreValid;
 
 	//Reference to a pooled render target where the shader will write its output
-	TRefCountPtr<IPooledRenderTarget> ComputeShaderOutput;
+	TRefCountPtr<IPooledRenderTarget> FPooledRenderTarget;
 public:
 	void Execute_RenderThread(FRHICommandListImmediate& RHICmdList, class FSceneRenderTargets& SceneContext);
 };

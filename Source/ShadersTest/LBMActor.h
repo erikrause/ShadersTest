@@ -18,7 +18,10 @@ public:
 		UStaticMeshComponent* static_mesh;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shader)
-		class UTextureRenderTarget2D* RenderTarget;
+		class UTextureRenderTarget2D* FRenderTarget;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shader)
+		class UTextureRenderTarget2D* URenderTarget;
 public:
 	// Sets default values for this pawn's properties
 	ALBMActor();

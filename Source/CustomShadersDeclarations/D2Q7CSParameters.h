@@ -7,19 +7,39 @@
 //This struct act as a container for all the parameters that the client needs to pass to the Compute Shader Manager.
 struct D2Q7CSParameters
 {
-	UTextureRenderTarget2D* RenderTarget;
+	// “екстура дл€ хранени€ распределени€ частиц в узлах.
+	UTextureRenderTarget2D* FRenderTarget;
+
+	// “екстура дл€ хранени€ скоростей в узлах.
+	UTextureRenderTarget2D* URenderTarget;
+
+	// Test.
 	int IsInit = 1;
 
-	FIntPoint GetRenderTargetSize() const
+	/// <summary>
+	/// ¬ернуть разрешение текстуры.
+	/// </summary>
+	/// <param name="isOnlyXYDims"> ¬ернуть XY - разрешение сетки узлов. </param>
+	/// <returns></returns>
+	FIntPoint GetRenderTargetSize(bool isOnlyXYDims = false) const
 	{
-		return CachedRenderTargetSize;
+		if (isOnlyXYDims)
+		{
+			FIntPoint XY = CachedRenderTargetSize;
+			XY.Y /= 9;
+			return XY;
+		}
+		else
+		{
+			return CachedRenderTargetSize;
+		}
 	}
 
 	D2Q7CSParameters() { }
-	D2Q7CSParameters(UTextureRenderTarget2D* IORenderTarget)
-		: RenderTarget(IORenderTarget)
+	D2Q7CSParameters(UTextureRenderTarget2D* IORenderTarget, UTextureRenderTarget2D* uRenderTarget)
+		: FRenderTarget(IORenderTarget), URenderTarget(uRenderTarget)
 	{
-		CachedRenderTargetSize = RenderTarget ? FIntPoint(RenderTarget->SizeX, RenderTarget->SizeY) : FIntPoint::ZeroValue;
+		CachedRenderTargetSize = FRenderTarget ? FIntPoint(FRenderTarget->SizeX, FRenderTarget->SizeY) : FIntPoint::ZeroValue;
 	}
 
 private:

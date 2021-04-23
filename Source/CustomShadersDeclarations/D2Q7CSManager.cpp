@@ -1,66 +1,16 @@
 PRAGMA_DISABLE_OPTIMIZATION
 
 #include "D2Q7CSManager.h"
+#include "D2Q7CS.h"
 //#include "D2Q7CSParameters.h"
 
-#include "GlobalShader.h"
-#include "ShaderParameterStruct.h"
 #include "RenderGraphUtils.h"
 #include "RenderTargetPool.h"
+#include "time.h"
 
 #include "Modules/ModuleManager.h"
 
-#define NUM_THREADS_PER_GROUP_DIMENSION 32
 
-/// <summary>
-/// Internal class thet holds the parameters and connects the HLSL Shader to the engine
-/// </summary>
-class FD2Q7CS : public FGlobalShader
-{
-public:
-	//Declare this class as a global shader
-	DECLARE_GLOBAL_SHADER(FD2Q7CS);
-	//Tells the engine that this shader uses a structure for its parameters
-	SHADER_USE_PARAMETER_STRUCT(FD2Q7CS, FGlobalShader);
-	/// <summary>
-	/// DECLARATION OF THE PARAMETER STRUCTURE
-	/// The parameters must match the parameters in the HLSL code
-	/// For each parameter, provide the C++ type, and the name (Same name used in HLSL code)
-	/// </summary>
-	BEGIN_SHADER_PARAMETER_STRUCT(FParameters, )
-		SHADER_PARAMETER_SAMPLER(SamplerState, F_SamplerState)
-		SHADER_PARAMETER_TEXTURE(Texture2D<float>, F_in)
-		SHADER_PARAMETER_UAV(RWTexture2D<float>, F_out)
-		SHADER_PARAMETER(float, Rho0)
-		SHADER_PARAMETER(float, Tau)
-		SHADER_PARAMETER(int, IsInit)
-		SHADER_PARAMETER(int32, Nx)
-		SHADER_PARAMETER(int, Ny)
-	END_SHADER_PARAMETER_STRUCT()
-
-public:
-	//Called by the engine to determine which permutations to compile for this shader
-	static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)
-	{
-		return IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5);
-	}
-
-	//Modifies the compilations environment of the shader
-	static inline void ModifyCompilationEnvironment(const FGlobalShaderPermutationParameters& Parameters, FShaderCompilerEnvironment& OutEnvironment)
-	{
-		FGlobalShader::ModifyCompilationEnvironment(Parameters, OutEnvironment);
-
-		//We're using it here to add some preprocessor defines. That way we don't have to change both C++ and HLSL code when we change the value for NUM_THREADS_PER_GROUP_DIMENSION
-		OutEnvironment.SetDefine(TEXT("THREADGROUPSIZE_X"), NUM_THREADS_PER_GROUP_DIMENSION);
-		OutEnvironment.SetDefine(TEXT("THREADGROUPSIZE_Y"), NUM_THREADS_PER_GROUP_DIMENSION);
-		OutEnvironment.SetDefine(TEXT("THREADGROUPSIZE_Z"), 1);
-	}
-
-};
-
-// This will tell the engine to create the shader and where the shader entry point is.
-//                        ShaderType              ShaderPath             Shader function name    Type
-IMPLEMENT_GLOBAL_SHADER(FD2Q7CS, "/CustomShaders/D2Q7CS.usf", "Main", SF_Compute);
 
 //Static members
 FD2Q7CSManager* FD2Q7CSManager::instance = nullptr;
@@ -120,7 +70,7 @@ void FD2Q7CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList, 
 {
 	//If there's no cached parameters to use, skip
 	//If no Render Target is supplied in the cachedParams, skip
-	if (!(bCachedParamsAreValid && cachedParams.RenderTarget))
+	if (!(bCachedParamsAreValid && cachedParams.FRenderTarget))
 	{
 		return;
 	}
@@ -129,12 +79,19 @@ void FD2Q7CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList, 
 	check(IsInRenderingThread());
 
 	//If the render target is not valid, get an element from the render target pool by supplying a Descriptor
-	if (!ComputeShaderOutput.IsValid())
+	if (!FPooledRenderTarget.IsValid())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Not Valid"));
-		FPooledRenderTargetDesc ComputeShaderOutputDesc(FPooledRenderTargetDesc::Create2DDesc(cachedParams.GetRenderTargetSize(), cachedParams.RenderTarget->GetRenderTargetResource()->TextureRHI->GetFormat(), FClearValueBinding::None, TexCreate_None, TexCreate_ShaderResource | TexCreate_UAV, false));
-		ComputeShaderOutputDesc.DebugName = TEXT("WhiteNoiseCS_Output_RenderTarget");
-		GRenderTargetPool.FindFreeElement(RHICmdList, ComputeShaderOutputDesc, ComputeShaderOutput, TEXT("WhiteNoiseCS_Output_RenderTarget"));
+		UE_LOG(LogTemp, Warning, TEXT("F pool is not Valid"));
+		FPooledRenderTargetDesc FOutputDesc(FPooledRenderTargetDesc::Create2DDesc(cachedParams.GetRenderTargetSize(), cachedParams.FRenderTarget->GetRenderTargetResource()->TextureRHI->GetFormat(), FClearValueBinding::None, TexCreate_None, TexCreate_ShaderResource | TexCreate_UAV, false));
+		FOutputDesc.DebugName = TEXT("FCS_Output_RenderTarget");
+		GRenderTargetPool.FindFreeElement(RHICmdList, FOutputDesc, FPooledRenderTarget, TEXT("FCS_Output_RenderTarget"));
+	}
+	if (!UPooledRenderTarget.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Vorticity pool is not Valid"));
+		FPooledRenderTargetDesc VorticityOutputDesc(FPooledRenderTargetDesc::Create2DDesc(cachedParams.GetRenderTargetSize(true), cachedParams.URenderTarget->GetRenderTargetResource()->TextureRHI->GetFormat(), FClearValueBinding::None, TexCreate_None, TexCreate_ShaderResource | TexCreate_UAV, false));
+		VorticityOutputDesc.DebugName = TEXT("UCS_Output_RenderTarget");
+		GRenderTargetPool.FindFreeElement(RHICmdList, VorticityOutputDesc, UPooledRenderTarget, TEXT("UCS_Output_RenderTarget"));
 	}
 	//auto textureUAVRef = RHICreateUnorderedAccessView(cachedParams.RenderTarget->GetRenderTargetResource()->TextureRHI);
 
@@ -142,7 +99,8 @@ void FD2Q7CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList, 
 	UnbindRenderTargets(RHICmdList);
 
 	//Specify the resource transition, we're executing this in post scene rendering so we set it to Graphics to Compute
-	RHICmdList.TransitionResource(EResourceTransitionAccess::ERWBarrier, EResourceTransitionPipeline::EGfxToCompute, ComputeShaderOutput->GetRenderTargetItem().UAV);
+	RHICmdList.TransitionResource(EResourceTransitionAccess::ERWBarrier, EResourceTransitionPipeline::EGfxToCompute, FPooledRenderTarget->GetRenderTargetItem().UAV);
+	RHICmdList.TransitionResource(EResourceTransitionAccess::ERWBarrier, EResourceTransitionPipeline::EGfxToCompute, UPooledRenderTarget->GetRenderTargetItem().UAV);
 
 	// CREATE THE SAMPLER STATE RHI RESOURCE.
 	//ESamplerAddressMode SamplerAddressMode = Owner->SamplerAddressMode;
@@ -157,18 +115,23 @@ void FD2Q7CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList, 
 	//Fill the shader parameters structure with tha cached data supplied by the client
 	FD2Q7CS::FParameters PassParameters;
 	PassParameters.F_SamplerState = RHICreateSamplerState(SamplerStateInitializer);
-	PassParameters.F_in = cachedParams.RenderTarget->GetRenderTargetResource()->TextureRHI;
-	PassParameters.F_out = ComputeShaderOutput->GetRenderTargetItem().UAV;
+	PassParameters.F_in = cachedParams.FRenderTarget->GetRenderTargetResource()->TextureRHI;
+	PassParameters.F_out = FPooledRenderTarget->GetRenderTargetItem().UAV;
 	PassParameters.Rho0 = 100;
 	PassParameters.Tau = 0.6;
 	PassParameters.IsInit = 1;		//PassParameters.IsInit = cachedParams.IsInit;
 	PassParameters.Nx = cachedParams.GetRenderTargetSize().X;
 	PassParameters.Ny = cachedParams.GetRenderTargetSize().Y / 9;
+	PassParameters.U = UPooledRenderTarget->GetRenderTargetItem().UAV;
 	//PassParameters.Dimensions = FVector2D(cachedParams.GetRenderTargetSize().X, cachedParams.GetRenderTargetSize().Y);
 	//PassParameters.TimeStamp = cachedParams.TimeStamp;
 
 	//Get a reference to our shader type from global shader map
 	TShaderMapRef<FD2Q7CS> D2Q7CS(GetGlobalShaderMap(GMaxRHIFeatureLevel));
+
+	clock_t start, end;
+
+	start = clock();
 
 	//Dispatch the compute shader
 	FComputeShaderUtils::Dispatch(RHICmdList, D2Q7CS, PassParameters,
@@ -176,8 +139,14 @@ void FD2Q7CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList, 
 			FMath::DivideAndRoundUp(cachedParams.GetRenderTargetSize().Y / 9, NUM_THREADS_PER_GROUP_DIMENSION), 1));
 
 	//Copy shader's output to the render target provided by the client
-	RHICmdList.CopyTexture(ComputeShaderOutput->GetRenderTargetItem().ShaderResourceTexture, cachedParams.RenderTarget->GetRenderTargetResource()->TextureRHI, FRHICopyTextureInfo());
-	RHICmdList.SetComputeShader(D2Q7CS.GetComputeShader());
+	RHICmdList.CopyTexture(FPooledRenderTarget->GetRenderTargetItem().ShaderResourceTexture, cachedParams.FRenderTarget->GetRenderTargetResource()->TextureRHI, FRHICopyTextureInfo());
+	RHICmdList.CopyTexture(UPooledRenderTarget->GetRenderTargetItem().ShaderResourceTexture, cachedParams.URenderTarget->GetRenderTargetResource()->TextureRHI, FRHICopyTextureInfo());
+	//RHICmdList.SetComputeShader(D2Q7CS.GetComputeShader());	// зачем?
+
+	end = clock();
+
+	double result = ((double)end - start) / ((double)CLOCKS_PER_SEC);
+
 
 	int prob = 0;
 }

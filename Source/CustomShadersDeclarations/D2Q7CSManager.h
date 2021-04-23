@@ -65,7 +65,8 @@ private:
 	volatile bool bCachedParamsAreValid;
 
 	//Reference to a pooled render target where the shader will write its output
-	TRefCountPtr<IPooledRenderTarget> ComputeShaderOutput;
+	TRefCountPtr<IPooledRenderTarget> FPooledRenderTarget;
+	TRefCountPtr<IPooledRenderTarget> UPooledRenderTarget;
 public:
 	void Execute_RenderThread(FRHICommandListImmediate& RHICmdList, class FSceneRenderTargets& SceneContext);
 };

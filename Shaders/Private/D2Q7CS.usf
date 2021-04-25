@@ -23,6 +23,8 @@
 float Rho0; // = 100; // average density
 float Tau; // = 0.6; // collision timescale
 
+RWStructuredBuffer<int> PorousData; //[2048]; //[40000];
+
 int IsInit; // = 1;  // bool не работает на уровне C++.
 int Nx;
 int Ny;
@@ -213,7 +215,9 @@ void Main(uint3 DTid : SV_DispatchThreadID)
     }
     
     // U OUTPUT:
-    U[float2(x, y)] = float2(ux, uy);
+    //U[float2(x, y)] = float2(ux, uy);
+    int value = PorousData[x + y * Nx];
+    U[float2(x, y)] = float2(value, 0);  // test porous data out.
     
     
     // VORTICITY:

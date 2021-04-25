@@ -1,6 +1,7 @@
 PRAGMA_DISABLE_OPTIMIZATION
 
 #include "LBMActor.h"
+#include "Amaretto.h"
 
 #include "Kismet/GameplayStatics.h"
 #include <Runtime/Engine/Classes/Kismet/KismetRenderingLibrary.h>
@@ -15,6 +16,12 @@ ALBMActor::ALBMActor()
 	RootComponent = Root;
 
 	static_mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Static Mesh"));
+	
+
+	Amaretto* amarettoTest = new Amaretto(FString("C:\\img, c0=22.5, c=23.4.amaretto"));
+	porousDataArray = amarettoTest->GetPorousDataArray();
+
+	int prob2 = 0;
 }
 
 // Called when the game starts or when spawned
@@ -47,7 +54,7 @@ void ALBMActor::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	//Update parameters
-	D2Q7CSParameters parameters(FRenderTarget, URenderTarget);
+	D2Q7CSParameters parameters(FRenderTarget, URenderTarget, porousDataArray);
 	FD2Q7CSManager::Get()->UpdateParameters(parameters);
 	auto probTex = FRenderTarget->GameThread_GetRenderTargetResource();
 	//probTex->

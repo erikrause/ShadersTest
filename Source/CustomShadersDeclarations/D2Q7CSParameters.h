@@ -15,6 +15,7 @@ struct D2Q7CSParameters
 
 	// Test.
 	int IsInit = 1;
+	int* PorousDataArray;
 
 	/// <summary>
 	/// Вернуть разрешение текстуры.
@@ -30,15 +31,16 @@ struct D2Q7CSParameters
 			return XY;
 		}
 		else
-		{
 			return CachedRenderTargetSize;
+		{
 		}
 	}
 
 	D2Q7CSParameters() { }
-	D2Q7CSParameters(UTextureRenderTarget2D* IORenderTarget, UTextureRenderTarget2D* uRenderTarget)
+	D2Q7CSParameters(UTextureRenderTarget2D* IORenderTarget, UTextureRenderTarget2D* uRenderTarget, int* porousDataArray)
 		: FRenderTarget(IORenderTarget), URenderTarget(uRenderTarget)
 	{
+		PorousDataArray = porousDataArray;
 		CachedRenderTargetSize = FRenderTarget ? FIntPoint(FRenderTarget->SizeX, FRenderTarget->SizeY) : FIntPoint::ZeroValue;
 	}
 

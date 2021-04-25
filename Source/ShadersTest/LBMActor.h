@@ -34,6 +34,9 @@ protected:
 
 	virtual void BeginDestroy() override;
 
+	//Amaretto* _amarettoTest;
+	int* porousDataArray;
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;

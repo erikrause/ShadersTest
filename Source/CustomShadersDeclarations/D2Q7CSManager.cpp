@@ -111,9 +111,28 @@ void FD2Q7CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList, 
 	//	SamplerAddressMode
 	//);
 	//SamplerStateRHI = RHICreateSamplerState(SamplerStateInitializer);
+	
+	// Test resource array. Sources: https://forums.unrealengine.com/t/get-data-back-from-compute-shader/12880 ,
+	// https://cpp.hotexamples.com/ru/examples/-/TResourceArray/AddUninitialized/cpp-tresourcearray-adduninitialized-method-examples.html , 
+	// https://veldrid.dev/articles/shaders.html
+	TResourceArray<int> porousBuffer;
+	porousBuffer.Append(cachedParams.PorousDataArray, 64 * 64 * 64);
+	FRHIResourceCreateInfo CreateInfo;
+	CreateInfo.ResourceArray = &porousBuffer;
+
+	FStructuredBufferRHIRef StructResource = RHICreateStructuredBuffer(
+		sizeof(int),
+		porousBuffer.Num() * sizeof(int),
+		BUF_UnorderedAccess | BUF_ShaderResource,
+		CreateInfo
+	);
+	FUnorderedAccessViewRHIRef StructUAV = RHICreateUnorderedAccessView(StructResource, false, false);
+
 
 	//Fill the shader parameters structure with tha cached data supplied by the client
 	FD2Q7CS::FParameters PassParameters;
+	PassParameters.PorousData = StructUAV;
+	//PassParameters.PorousData = cachedParams.PorousDataArray;
 	PassParameters.F_SamplerState = RHICreateSamplerState(SamplerStateInitializer);
 	PassParameters.F_in = cachedParams.FRenderTarget->GetRenderTargetResource()->TextureRHI;
 	PassParameters.F_out = FPooledRenderTarget->GetRenderTargetItem().UAV;

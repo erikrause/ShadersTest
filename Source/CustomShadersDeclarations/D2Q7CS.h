@@ -19,6 +19,9 @@ public:
 	/// For each parameter, provide the C++ type, and the name (Same name used in HLSL code)
 	/// </summary>
 	BEGIN_SHADER_PARAMETER_STRUCT(FParameters, )
+		SHADER_PARAMETER_UAV(FRWBuffer<int>, PorousData)
+		//SHADER_PARAMETER_STRUCT(int32, PorousData)
+		//SHADER_PARAMETER_ARRAY(int, PorousData, [2048])
 		SHADER_PARAMETER_SAMPLER(SamplerState, F_SamplerState)
 		SHADER_PARAMETER_TEXTURE(Texture2D<float>, F_in)
 		SHADER_PARAMETER_UAV(RWTexture2D<float>, F_out)

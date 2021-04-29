@@ -1,7 +1,7 @@
 PRAGMA_DISABLE_OPTIMIZATION
 
-#include "D2Q9CSManager.h"
-#include "D2Q9CS.h"
+#include "D3Q19CSManager.h"
+#include "D3Q19CS.h"
 
 #include "RenderGraphUtils.h"
 #include "RenderTargetPool.h"
@@ -12,10 +12,10 @@ PRAGMA_DISABLE_OPTIMIZATION
 
 
 //Static members
-FD2Q9CSManager* FD2Q9CSManager::instance = nullptr;
+FD3Q19CSManager* FD3Q19CSManager::instance = nullptr;
 
 //Begin the execution of the compute shader each frame
-void FD2Q9CSManager::BeginRendering()
+void FD3Q19CSManager::BeginRendering()
 {
 	//If the handle is already initalized and valid, no need to do anything
 	if (OnPostResolvedSceneColorHandle.IsValid())
@@ -28,12 +28,12 @@ void FD2Q9CSManager::BeginRendering()
 	IRendererModule* RendererModule = FModuleManager::GetModulePtr<IRendererModule>(RendererModuleName);
 	if (RendererModule)
 	{
-		OnPostResolvedSceneColorHandle = RendererModule->GetResolvedSceneColorCallbacks().AddRaw(this, &FD2Q9CSManager::Execute_RenderThread);
+		OnPostResolvedSceneColorHandle = RendererModule->GetResolvedSceneColorCallbacks().AddRaw(this, &FD3Q19CSManager::Execute_RenderThread);
 	}
 }
 
 //Stop the compute shader execution
-void FD2Q9CSManager::EndRendering()
+void FD3Q19CSManager::EndRendering()
 {
 	//If the handle is not valid then there's no cleanup to do
 	if (!OnPostResolvedSceneColorHandle.IsValid())
@@ -53,7 +53,7 @@ void FD2Q9CSManager::EndRendering()
 }
 
 //Update the parameters by a providing an instance of the Parameters structure used by the shader manager
-void FD2Q9CSManager::UpdateParameters(D2Q9CSParameters& params)
+void FD3Q19CSManager::UpdateParameters(D3Q19CSParameters& params)
 {
 	cachedParams = params;
 	bCachedParamsAreValid = true;
@@ -65,7 +65,7 @@ void FD2Q9CSManager::UpdateParameters(D2Q9CSParameters& params)
 /// Gets a reference to the shader type from the global shaders map
 /// Dispatches the shader using the parameter structure instance
 /// </summary>
-void FD2Q9CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList, class FSceneRenderTargets& SceneContext)
+void FD3Q19CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList, class FSceneRenderTargets& SceneContext)
 {
 	//If there's no cached parameters to use, skip
 	//If no Render Target is supplied in the cachedParams, skip
@@ -130,7 +130,7 @@ void FD2Q9CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList, 
 
 
 	//Fill the shader parameters structure with tha cached data supplied by the client
-	FD2Q9CS::FParameters PassParameters;
+	FD3Q19CS::FParameters PassParameters;
 	PassParameters.PorousData = StructSRV;
 	//PassParameters.PorousData = cachedParams.PorousDataArray;
 	PassParameters.F_SamplerState = RHICreateSamplerState(SamplerStateInitializer);
@@ -147,21 +147,21 @@ void FD2Q9CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList, 
 	//PassParameters.TimeStamp = cachedParams.TimeStamp;
 
 	//Get a reference to our shader type from global shader map
-	TShaderMapRef<FD2Q9CS> D2Q9CS(GetGlobalShaderMap(GMaxRHIFeatureLevel));
+	TShaderMapRef<FD3Q19CS> D3Q19CS(GetGlobalShaderMap(GMaxRHIFeatureLevel));
 
 	clock_t start, end;
 
 	start = clock();
 
 	//Dispatch the compute shader
-	FComputeShaderUtils::Dispatch(RHICmdList, D2Q9CS, PassParameters,
+	FComputeShaderUtils::Dispatch(RHICmdList, D3Q19CS, PassParameters,
 		FIntVector(FMath::DivideAndRoundUp(cachedParams.GetRenderTargetSize().X, NUM_THREADS_PER_GROUP_DIMENSION),
 			FMath::DivideAndRoundUp(cachedParams.GetRenderTargetSize().Y / 9, NUM_THREADS_PER_GROUP_DIMENSION), 1));
 
 	//Copy shader's output to the render target provided by the client
 	RHICmdList.CopyTexture(FPooledRenderTarget->GetRenderTargetItem().ShaderResourceTexture, cachedParams.FRenderTarget->GetRenderTargetResource()->TextureRHI, FRHICopyTextureInfo());
 	RHICmdList.CopyTexture(UPooledRenderTarget->GetRenderTargetItem().ShaderResourceTexture, cachedParams.URenderTarget->GetRenderTargetResource()->TextureRHI, FRHICopyTextureInfo());
-	//RHICmdList.SetComputeShader(D2Q9CS.GetComputeShader());	// зачем?
+	//RHICmdList.SetComputeShader(D3Q19CS.GetComputeShader());	// зачем?
 
 	end = clock();
 

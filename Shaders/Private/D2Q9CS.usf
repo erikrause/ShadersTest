@@ -46,7 +46,8 @@ SamplerState F_SamplerState;
 
 bool isBoundary(int x, int y)
 {
-    return PorousData[x + y * Nx] == 0;
+    //return PorousData[x + y * Nx] == 0;
+    return ((pow((x - Nx / 4), 2) + pow((y - Ny / 2), 2)) < pow((Ny / 4), 2));
 }
 
 float getLocalRho(float f[Q])
@@ -109,8 +110,7 @@ void Main(uint3 DTid : SV_DispatchThreadID)
     int y_out = DTid.y * 9;    // масштабируем Y {0..100} -> Y {0..900}, т.к. в одном узле сетки надо хранить 9 значений скорости (для каждого нарпавления).
     //uint v_id = DTid.y % 9; // остаток от деления?
     
-    float ux = 0;
-    float uy = 0;
+    float2 u = float2(0, 0);
     
     if (Iteration == 0)
     {
@@ -184,19 +184,22 @@ void Main(uint3 DTid : SV_DispatchThreadID)
         //}
         for (int i = 0; i < Q; i++)
         {
-            ux += F[i] * cxs[i];
-            uy += F[i] * cys[i];
+            u.x += F[i] * cxs[i];
+            u.y += F[i] * cys[i];
         }
-        ux /= rho;
-        uy /= rho;
+        u.x /= rho;
+        u.y /= rho;
     
         //COLLISION:
         float Feq[Q];
+        float2 unit = float2(1, 1); // единичный вектор.
         for (i = 0; i < Q; i++)
         {
-            Feq[i] = rho * weights[i] * (1 + 3 * (cxs[i] * ux + cys[i] * uy) +
-                                   9 * pow(cxs[i] * ux + cys[i] * uy, 2) / 2 -
-                                   3 * (pow(ux, 2) + pow(uy, 2)) / 2);
+            float2 e = float2(cxs[i], cys[i]);  // lattice direction.
+            
+            Feq[i] = rho * weights[i] * (1 + 3 * dot(e * u, unit) + //(cxs[i] * u.x + cys[i] * u.y) +
+                                   9 * pow(dot(e * u, unit), 2) / 2 -
+                                   3 * dot(pow(u, 2), unit) / 2);
             F[i] += -(1.0 / Tau) * (F[i] - Feq[i]);
         }
     
@@ -214,7 +217,7 @@ void Main(uint3 DTid : SV_DispatchThreadID)
     }
     
     // U OUTPUT:
-    U[float2(x, y)] = float2(ux, uy);
+    U[float2(x, y)] = float2(u.x, u.y);
     
     
     // TEST POROUS OUTPUT:

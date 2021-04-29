@@ -6,20 +6,21 @@
 /// <summary>
 /// Internal class thet holds the parameters and connects the HLSL Shader to the engine
 /// </summary>
-class FD2Q7CS : public FGlobalShader
+class FD2Q9CS : public FGlobalShader
 {
 public:
 	//Declare this class as a global shader
-	DECLARE_GLOBAL_SHADER(FD2Q7CS);
+	DECLARE_GLOBAL_SHADER(FD2Q9CS);
 	//Tells the engine that this shader uses a structure for its parameters
-	SHADER_USE_PARAMETER_STRUCT(FD2Q7CS, FGlobalShader);
+	SHADER_USE_PARAMETER_STRUCT(FD2Q9CS, FGlobalShader);
 	/// <summary>
 	/// DECLARATION OF THE PARAMETER STRUCTURE
 	/// The parameters must match the parameters in the HLSL code
 	/// For each parameter, provide the C++ type, and the name (Same name used in HLSL code)
 	/// </summary>
 	BEGIN_SHADER_PARAMETER_STRUCT(FParameters, )
-		SHADER_PARAMETER_UAV(FRWBuffer<int>, PorousData)
+		SHADER_PARAMETER_SRV(FRWBufferStructured, PorousData)
+		//SHADER_PARAMETER_UAV(FRWBuffer<int>, PorousData)
 		//SHADER_PARAMETER_STRUCT(int32, PorousData)
 		//SHADER_PARAMETER_ARRAY(int, PorousData, [2048])
 		SHADER_PARAMETER_SAMPLER(SamplerState, F_SamplerState)
@@ -27,8 +28,8 @@ public:
 		SHADER_PARAMETER_UAV(RWTexture2D<float>, F_out)
 		SHADER_PARAMETER_UAV(RWTexture2D<float2>, U)
 		SHADER_PARAMETER(float, Rho0)
-		SHADER_PARAMETER(float, Tau)
-		SHADER_PARAMETER(int, IsInit)
+		//SHADER_PARAMETER(float, Tau)
+		SHADER_PARAMETER(int, Iteration)
 		SHADER_PARAMETER(int32, Nx)
 		SHADER_PARAMETER(int, Ny)
 		END_SHADER_PARAMETER_STRUCT()
@@ -55,4 +56,4 @@ public:
 
 // This will tell the engine to create the shader and where the shader entry point is.
 //                        ShaderType              ShaderPath             Shader function name    Type
-IMPLEMENT_GLOBAL_SHADER(FD2Q7CS, "/CustomShaders/D2Q7CS.usf", "Main", SF_Compute);
+IMPLEMENT_GLOBAL_SHADER(FD2Q9CS, "/CustomShaders/D2Q9CS.usf", "Main", SF_Compute);

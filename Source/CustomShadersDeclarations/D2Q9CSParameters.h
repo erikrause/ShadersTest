@@ -1,11 +1,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-//#include "D2Q7CSParameters.h"
+//#include "D2Q9CSParameters.h"
 #include "Runtime/Engine/Classes/Engine/TextureRenderTarget2D.h"
 
 //This struct act as a container for all the parameters that the client needs to pass to the Compute Shader Manager.
-struct D2Q7CSParameters
+struct D2Q9CSParameters
 {
 	// “екстура дл€ хранени€ распределени€ частиц в узлах.
 	UTextureRenderTarget2D* FRenderTarget;
@@ -14,7 +14,7 @@ struct D2Q7CSParameters
 	UTextureRenderTarget2D* URenderTarget;
 
 	// Test.
-	int IsInit = 1;
+	int Iteration = 0;
 	int* PorousDataArray;
 
 	/// <summary>
@@ -36,8 +36,8 @@ struct D2Q7CSParameters
 		}
 	}
 
-	D2Q7CSParameters() { }
-	D2Q7CSParameters(UTextureRenderTarget2D* IORenderTarget, UTextureRenderTarget2D* uRenderTarget, int* porousDataArray)
+	D2Q9CSParameters() { }
+	D2Q9CSParameters(UTextureRenderTarget2D* IORenderTarget, UTextureRenderTarget2D* uRenderTarget, int* porousDataArray)
 		: FRenderTarget(IORenderTarget), URenderTarget(uRenderTarget)
 	{
 		PorousDataArray = porousDataArray;

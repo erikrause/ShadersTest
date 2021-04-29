@@ -36,6 +36,7 @@ protected:
 
 	//Amaretto* _amarettoTest;
 	int* porousDataArray;
+	int iteration = -1;
 
 public:	
 	// Called every frame

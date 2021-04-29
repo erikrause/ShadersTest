@@ -21,11 +21,13 @@
 //Nx = 400    // resolution x-dir
 //Ny = 100    // resolution y-dir
 float Rho0; // = 100; // average density
-float Tau; // = 0.6; // collision timescale
+static float Tau = 0.6; // collision timescale
 
-RWStructuredBuffer<int> PorousData; //[2048]; //[40000];
+RWTexture3D<float> prob;
 
-int IsInit; // = 1;  // bool не работает на уровне C++.
+StructuredBuffer<int> PorousData; //[2048]; //[40000];
+
+int Iteration;
 int Nx;
 int Ny;
 
@@ -41,6 +43,11 @@ static float weights[] = { 4.0/9.0, 1.0/9.0, 1.0/36.0, 1.0/9.0, 1.0/36.0, 1.0/9.
 static const float PI = 3.14159265f;
 
 SamplerState F_SamplerState;
+
+bool isBoundary(int x, int y)
+{
+    return PorousData[x + y * Nx] == 0;
+}
 
 float getLocalRho(int x_tex, int y_tex, int n_d)
 {
@@ -80,28 +87,14 @@ void initArray(int x, int y, int x_tex, int y_tex)
     }
         
         
-        // Set cylinder: TODO: set boundaries outside.
-    if ((pow((x - Nx / 4), 2) + pow((y - Ny / 2), 2)) < pow((Ny / 4), 2))   //  (x > 0 && x < 3 && y > -1 && y < 2)
+    // Граничное условие:
+    if (isBoundary(x, y)) //((pow((x - Nx / 4), 2) + pow((y - Ny / 2), 2)) < pow((Ny / 4), 2))   //  (x > 0 && x < 3 && y > -1 && y < 2)
     {
         for (int i = 0; i < NL; i++)
         {
             F_out[float2(x_tex, y_tex + i)] = 0;
         }
     }
-}
-
-void initTestArray(int x, int y, int x_tex, int y_tex)
-{
-    F_out[float2(x_tex, y_tex)] = -82772.8438;
-    F_out[float2(x_tex, y_tex + 1)] = -20693.1875;
-    F_out[float2(x_tex, y_tex + 2)] = 10585.1973;
-    F_out[float2(x_tex, y_tex + 3)] = 42340.7734;
-    F_out[float2(x_tex, y_tex + 4)] = 10585.2070;
-    F_out[float2(x_tex, y_tex + 5)] = -20693.1875;
-    F_out[float2(x_tex, y_tex + 6)] = 9522.18457;
-    F_out[float2(x_tex, y_tex + 7)] = 38088.6602;
-    F_out[float2(x_tex, y_tex + 8)] = 9522.19531;
-
 }
 
 [numthreads(THREADGROUPSIZE_X, THREADGROUPSIZE_Y, THREADGROUPSIZE_Z)]
@@ -119,10 +112,9 @@ void Main(uint3 DTid : SV_DispatchThreadID)
     float ux = 0;
     float uy = 0;
     
-    if (IsInit != 0)
+    if (Iteration == 0)
     {
-        //initArray(x, y, x_out, y_out);
-        //initTestArray(x, y, x_out, y_out);
+        initArray(x, y, x_out, y_out);
     }
     
     // DRIFT:
@@ -165,7 +157,7 @@ void Main(uint3 DTid : SV_DispatchThreadID)
     
     float F_bound_temp[9];
     // Check is cylinder and reflect: TODO: set boundaries outside.
-    if ((pow((x - Nx / 4), 2) + pow((y - Ny / 2), 2)) < pow((Ny / 4), 2))
+    if (isBoundary(x, y)) //((pow((x - Nx / 4), 2) + pow((y - Ny / 2), 2)) < pow((Ny / 4), 2))
     {
         F_bound_temp[0] = F[0];
         F_bound_temp[1] = F[5];
@@ -211,13 +203,19 @@ void Main(uint3 DTid : SV_DispatchThreadID)
     // F OUTPUT:
     for (int i = 0; i < NL; i++)
     {
-        F_out[float2(x_out, y_out + i)] = F[i];
+        if (Iteration > 0)
+        {
+            F_out[float2(x_out, y_out + i)] = F[i];
+        }
     }
     
     // U OUTPUT:
-    //U[float2(x, y)] = float2(ux, uy);
-    int value = PorousData[x + y * Nx];
-    U[float2(x, y)] = float2(value, 0);  // test porous data out.
+    U[float2(x, y)] = float2(ux, uy);
+    
+    
+    // TEST POROUS OUTPUT:
+    //int value = PorousData[x + y * Nx];
+    //U[float2(x, y)] = float2(value, 0);  // test porous data out.
     
     
     // VORTICITY:

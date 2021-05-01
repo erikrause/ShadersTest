@@ -1,8 +1,7 @@
 PRAGMA_DISABLE_OPTIMIZATION
 
-#include "D2Q9CSManager.h"
-#include "D2Q9CSDrift.h"
-#include "D2Q9CSCollision.h"
+#include "D3Q19CSManager.h"
+#include "D3Q19CS.h"
 
 #include "RenderGraphUtils.h"
 #include "RenderTargetPool.h"
@@ -13,10 +12,10 @@ PRAGMA_DISABLE_OPTIMIZATION
 
 
 //Static members
-FD2Q9CSManager* FD2Q9CSManager::instance = nullptr;
+FD3Q19CSManager* FD3Q19CSManager::instance = nullptr;
 
 //Begin the execution of the compute shader each frame
-void FD2Q9CSManager::BeginRendering()
+void FD3Q19CSManager::BeginRendering()
 {
 	//If the handle is already initalized and valid, no need to do anything
 	if (OnPostResolvedSceneColorHandle.IsValid())
@@ -29,12 +28,12 @@ void FD2Q9CSManager::BeginRendering()
 	IRendererModule* RendererModule = FModuleManager::GetModulePtr<IRendererModule>(RendererModuleName);
 	if (RendererModule)
 	{
-		OnPostResolvedSceneColorHandle = RendererModule->GetResolvedSceneColorCallbacks().AddRaw(this, &FD2Q9CSManager::Execute_RenderThread);
+		OnPostResolvedSceneColorHandle = RendererModule->GetResolvedSceneColorCallbacks().AddRaw(this, &FD3Q19CSManager::Execute_RenderThread);
 	}
 }
 
 //Stop the compute shader execution
-void FD2Q9CSManager::EndRendering()
+void FD3Q19CSManager::EndRendering()
 {
 	//If the handle is not valid then there's no cleanup to do
 	if (!OnPostResolvedSceneColorHandle.IsValid())
@@ -54,7 +53,7 @@ void FD2Q9CSManager::EndRendering()
 }
 
 //Update the parameters by a providing an instance of the Parameters structure used by the shader manager
-void FD2Q9CSManager::UpdateParameters(D2Q9CSParameters& params)
+void FD3Q19CSManager::UpdateParameters(D3Q19CSParameters& params)
 {
 	cachedParams = params;
 	bCachedParamsAreValid = true;
@@ -66,7 +65,7 @@ void FD2Q9CSManager::UpdateParameters(D2Q9CSParameters& params)
 /// Gets a reference to the shader type from the global shaders map
 /// Dispatches the shader using the parameter structure instance
 /// </summary>
-void FD2Q9CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList, class FSceneRenderTargets& SceneContext)
+void FD3Q19CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList, class FSceneRenderTargets& SceneContext)
 {
 	//If there's no cached parameters to use, skip
 	//If no Render Target is supplied in the cachedParams, skip
@@ -120,60 +119,49 @@ void FD2Q9CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList, 
 	FRHIResourceCreateInfo CreateInfo;
 	CreateInfo.ResourceArray = &porousBuffer;
 
-	FStructuredBufferRHIRef PorousStructResource = RHICreateStructuredBuffer(
+	FStructuredBufferRHIRef StructResource = RHICreateStructuredBuffer(
 		sizeof(int),
 		porousBuffer.Num() * sizeof(int),
 		BUF_UnorderedAccess | BUF_ShaderResource,
 		CreateInfo
 	);
-	FShaderResourceViewRHIRef PorousStructSRV = RHICreateShaderResourceView(PorousStructResource);
+	FShaderResourceViewRHIRef StructSRV = RHICreateShaderResourceView(StructResource);
 	//FUnorderedAccessViewRHIRef StructUAV = RHICreateUnorderedAccessView(StructResource, false, false);
 
 
 	//Fill the shader parameters structure with tha cached data supplied by the client
-	FD2Q9CSDrift::FParameters DriftCSParameters;
-	DriftCSParameters.PorousData = PorousStructSRV;
-	DriftCSParameters.F_SamplerState = RHICreateSamplerState(SamplerStateInitializer);
-	DriftCSParameters.F_in = cachedParams.FRenderTarget->GetRenderTargetResource()->TextureRHI;
-	DriftCSParameters.F_out = FPooledRenderTarget->GetRenderTargetItem().UAV;
-	DriftCSParameters.Rho0 = 100;
-	DriftCSParameters.Iteration = cachedParams.Iteration;
+	FD3Q19CS::FParameters PassParameters;
+	PassParameters.PorousData = StructSRV;
+	//PassParameters.PorousData = cachedParams.PorousDataArray;
+	PassParameters.F_SamplerState = RHICreateSamplerState(SamplerStateInitializer);
+	PassParameters.F_in = cachedParams.FRenderTarget->GetRenderTargetResource()->TextureRHI;
+	PassParameters.F_out = FPooledRenderTarget->GetRenderTargetItem().UAV;
+	PassParameters.Rho0 = 100;
+	PassParameters.Iteration = cachedParams.Iteration;
 	//PassParameters.Tau = 0.6;
-	DriftCSParameters.Nx = cachedParams.GetRenderTargetSize().X;
-	DriftCSParameters.Ny = cachedParams.GetRenderTargetSize().Y / 9;
 
-	FD2Q9CSCollision::FParameters CollisionCSParameters;
-	CollisionCSParameters.U = UPooledRenderTarget->GetRenderTargetItem().UAV;
-	CollisionCSParameters.F_in = cachedParams.FRenderTarget->GetRenderTargetResource()->TextureRHI;		// FPooledRenderTarget->GetRenderTargetItem().ShaderResourceTexture;
-	CollisionCSParameters.F_out = FPooledRenderTarget->GetRenderTargetItem().UAV;
-	CollisionCSParameters.Iteration = cachedParams.Iteration;
-	CollisionCSParameters.Nx = cachedParams.GetRenderTargetSize().X;
-	CollisionCSParameters.Ny = cachedParams.GetRenderTargetSize().Y / 9;
-	CollisionCSParameters.PorousData = PorousStructSRV;
-	CollisionCSParameters.Rho0 = 100;
+	PassParameters.Nx = cachedParams.GetRenderTargetSize().X;
+	PassParameters.Ny = cachedParams.GetRenderTargetSize().Y / 9;
+	PassParameters.U = UPooledRenderTarget->GetRenderTargetItem().UAV;
+	//PassParameters.Dimensions = FVector2D(cachedParams.GetRenderTargetSize().X, cachedParams.GetRenderTargetSize().Y);
+	//PassParameters.TimeStamp = cachedParams.TimeStamp;
 
 	//Get a reference to our shader type from global shader map
-	TShaderMapRef<FD2Q9CSDrift> D2Q9CSDrift(GetGlobalShaderMap(GMaxRHIFeatureLevel));
-	TShaderMapRef<FD2Q9CSCollision> D2Q9CSCollision(GetGlobalShaderMap(GMaxRHIFeatureLevel));
+	TShaderMapRef<FD3Q19CS> D3Q19CS(GetGlobalShaderMap(GMaxRHIFeatureLevel));
 
 	clock_t start, end;
 
 	start = clock();
 
-	FComputeShaderUtils::Dispatch(RHICmdList, D2Q9CSDrift, DriftCSParameters,
-		FIntVector(FMath::DivideAndRoundUp(cachedParams.GetRenderTargetSize().X, NUM_THREADS_PER_GROUP_DIMENSION),
-			FMath::DivideAndRoundUp(cachedParams.GetRenderTargetSize().Y / 9, NUM_THREADS_PER_GROUP_DIMENSION), 1));
-
-	RHICmdList.CopyTexture(FPooledRenderTarget->GetRenderTargetItem().ShaderResourceTexture, cachedParams.FRenderTarget->GetRenderTargetResource()->TextureRHI, FRHICopyTextureInfo());
-
-	FComputeShaderUtils::Dispatch(RHICmdList, D2Q9CSCollision, CollisionCSParameters,
+	//Dispatch the compute shader
+	FComputeShaderUtils::Dispatch(RHICmdList, D3Q19CS, PassParameters,
 		FIntVector(FMath::DivideAndRoundUp(cachedParams.GetRenderTargetSize().X, NUM_THREADS_PER_GROUP_DIMENSION),
 			FMath::DivideAndRoundUp(cachedParams.GetRenderTargetSize().Y / 9, NUM_THREADS_PER_GROUP_DIMENSION), 1));
 
 	//Copy shader's output to the render target provided by the client
 	RHICmdList.CopyTexture(FPooledRenderTarget->GetRenderTargetItem().ShaderResourceTexture, cachedParams.FRenderTarget->GetRenderTargetResource()->TextureRHI, FRHICopyTextureInfo());
 	RHICmdList.CopyTexture(UPooledRenderTarget->GetRenderTargetItem().ShaderResourceTexture, cachedParams.URenderTarget->GetRenderTargetResource()->TextureRHI, FRHICopyTextureInfo());
-	//RHICmdList.SetComputeShader(D2Q9CS.GetComputeShader());	// зачем?
+	//RHICmdList.SetComputeShader(D3Q19CS.GetComputeShader());	// зачем?
 
 	end = clock();
 
@@ -181,41 +169,4 @@ void FD2Q9CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList, 
 
 
 	int prob = 0;
-}
-
-
-
-
-// For texture debugging
-void FD2Q9CSManager::GetTexturePixels(FTexture2DRHIRef Texture, TArray<FColor>& OutPixels)
-{
-	struct FReadSurfaceContext
-	{
-		FTexture2DRHIRef Texture;
-		TArray<FColor>* OutData;
-		FIntRect Rect;
-		FReadSurfaceDataFlags Flags;
-	};
-
-	OutPixels.Reset();
-	FReadSurfaceContext ReadSurfaceContext =
-	{
-		Texture,
-		&OutPixels,
-		FIntRect(0, 0, Texture->GetSizeXY().X, Texture->GetSizeXY().Y),
-		FReadSurfaceDataFlags(RCM_UNorm, CubeFace_MAX)
-	};
-
-	ENQUEUE_UNIQUE_RENDER_COMMAND_ONEPARAMETER(
-		ReadSurfaceCommand,
-		FReadSurfaceContext, Context, ReadSurfaceContext,
-		{
-			RHICmdList.ReadSurfaceData(
-				Context.Texture,
-				Context.Rect,
-				*Context.OutData,
-				Context.Flags
-			);
-		});
-	FlushRenderingCommands();
 }

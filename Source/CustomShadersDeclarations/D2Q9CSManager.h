@@ -69,6 +69,10 @@ private:
 	TRefCountPtr<IPooledRenderTarget> UPooledRenderTarget;
 	uint32 _iteration = 0;
 	uint32 _maxIteration = 5000;
+
+	// For texture debbuging
+	void GetTexturePixels(FTexture2DRHIRef Texture, TArray<FColor>& OutPixels);
+
 public:
 	void Execute_RenderThread(FRHICommandListImmediate& RHICmdList, class FSceneRenderTargets& SceneContext);
 };

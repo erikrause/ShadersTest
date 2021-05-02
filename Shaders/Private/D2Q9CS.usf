@@ -23,6 +23,11 @@
 float Rho0; // = 100; // average density
 static float Tau = 0.6; // collision timescale
 
+<<<<<<< HEAD:Shaders/Private/D2Q9CS.usf
+=======
+RWTexture3D<float> prob;
+
+>>>>>>> parent of 1c49ff3 (Drift/collision thread separation (#1)):Shaders/Private/D2Q9CS-drift.usf
 StructuredBuffer<int> PorousData; //[2048]; //[40000];
 
 int Iteration;
@@ -33,21 +38,34 @@ Texture2D<float> F_in;     // F with current t
 RWTexture2D<float> F_out;  // t + 1
 RWTexture2D<float2> U;
 
-static const int Q = 9;   // number of directions.
+static int NL = 9;
 //static int idxs[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8 };
 static int cxs[] = { 0, 0, 1, 1, 1, 0, -1, -1, -1 };
 static int cys[] = { 0, 1, 1, 0, -1, -1, -1, 0, 1 };
 static float weights[] = { 4.0/9.0, 1.0/9.0, 1.0/36.0, 1.0/9.0, 1.0/36.0, 1.0/9.0, 1.0/36.0, 1.0/9.0, 1.0/36.0 };
+<<<<<<< HEAD:Shaders/Private/D2Q9CS.usf
 static int inverse_indexes[] = { 0, 5, 6, 7, 8, 1, 2, 3, 4 };
 
+=======
+>>>>>>> parent of 1c49ff3 (Drift/collision thread separation (#1)):Shaders/Private/D2Q9CS-drift.usf
 static const float PI = 3.14159265f;
 
 SamplerState F_SamplerState;
 
 bool isBoundary(int x, int y)
 {
-    //return PorousData[x + y * Nx] == 0;
-    return ((pow((x - Nx / 4), 2) + pow((y - Ny / 2), 2)) < pow((Ny / 4), 2));
+    return PorousData[x + y * Nx] == 0;
+}
+
+float getLocalRho(int x_tex, int y_tex, int n_d)
+{
+    float rho = 0;
+    for (int i = 0; i < n_d; i++)
+    {
+        rho += F_out[float2(x_tex, y_tex + i)]; // WARN! using F_out! -> F!
+    }
+    
+    return rho;
 }
 
 float getLocalRho(float f[Q])
@@ -64,7 +82,7 @@ float getLocalRho(float f[Q])
 void initArray(int x, int y, int x_tex, int y_tex)
 {
     //Fill init velocities:
-    for (int i = 0; i < Q; i++)
+    for (int i = 0; i < NL; i++)
     {
         F_out[float2(x_tex, y_tex + i)] = 1;
     }
@@ -78,11 +96,11 @@ void initArray(int x, int y, int x_tex, int y_tex)
     
     // Нормализуем распределение направлений частиц по глобальной плотности:
     float rho = 0; // текущая локальная плотность.
-    for (i = 0; i < Q; i++)
+    for (i = 0; i < NL; i++)
     {
         rho += F_out[float2(x_tex, y_tex + i)];
     }
-    for (i = 0; i < Q; i++)
+    for (i = 0; i < NL; i++)
     {
         F_out[float2(x_tex, y_tex + i)] *= Rho0 / rho;
     }
@@ -91,7 +109,7 @@ void initArray(int x, int y, int x_tex, int y_tex)
     // Граничное условие:
     if (isBoundary(x, y)) //((pow((x - Nx / 4), 2) + pow((y - Ny / 2), 2)) < pow((Ny / 4), 2))   //  (x > 0 && x < 3 && y > -1 && y < 2)
     {
-        for (int i = 0; i < Q; i++)
+        for (int i = 0; i < NL; i++)
         {
             F_out[float2(x_tex, y_tex + i)] = 0;
         }
@@ -110,7 +128,12 @@ void Main(uint3 DTid : SV_DispatchThreadID)
     int y_out = DTid.y * 9;    // масштабируем Y {0..100} -> Y {0..900}, т.к. в одном узле сетки надо хранить 9 значений скорости (для каждого нарпавления).
     //uint v_id = DTid.y % 9; // остаток от деления?
     
+<<<<<<< HEAD:Shaders/Private/D2Q9CS.usf
     float2 u = float2(0, 0);
+=======
+    float ux = 0;
+    float uy = 0;
+>>>>>>> parent of 1c49ff3 (Drift/collision thread separation (#1)):Shaders/Private/D2Q9CS-drift.usf
     
     if (Iteration == 0)
     {
@@ -127,14 +150,18 @@ void Main(uint3 DTid : SV_DispatchThreadID)
     
     
     float F[9]; // TODO: перенести в регистровую или разделяемую память.
+<<<<<<< HEAD:Shaders/Private/D2Q9CS.usf
     for (int i = 0; i < Q; i++)
+=======
+    for (int i = 0; i < NL; i++)
+>>>>>>> parent of 1c49ff3 (Drift/collision thread separation (#1)):Shaders/Private/D2Q9CS-drift.usf
     {
         F[i] = F_in[float2(x_out, y_out + i)];
     }
     //F[0] = F_in[float2(x_out, y_out)];
     
     // Drift particles to neighbours (with indexing):
-    for (int neighbour_id = 0; neighbour_id < Q; neighbour_id++)
+    for (int neighbour_id = 0; neighbour_id < NL; neighbour_id++)
     {
         int neighbour_x = x - cxs[neighbour_id];
         int neighbour_y = y - cys[neighbour_id];
@@ -155,14 +182,30 @@ void Main(uint3 DTid : SV_DispatchThreadID)
         F[neighbour_id] = F_in[float2(neighbour_x, neighbour_y_out + neighbour_id)];
     }
     
-    float F_bound_temp[Q];
+    float F_bound_temp[9];
     // Check is cylinder and reflect: TODO: set boundaries outside.
     if (isBoundary(x, y)) //((pow((x - Nx / 4), 2) + pow((y - Ny / 2), 2)) < pow((Ny / 4), 2))
     {
-        for (int i = 0; i < Q; i ++)
+        F_bound_temp[0] = F[0];
+        F_bound_temp[1] = F[5];
+        F_bound_temp[2] = F[6];
+        F_bound_temp[3] = F[7];
+        F_bound_temp[4] = F[8];
+        F_bound_temp[5] = F[1];
+        F_bound_temp[6] = F[2];
+        F_bound_temp[7] = F[3];
+        F_bound_temp[8] = F[4];
+        F = F_bound_temp;
+    }
+    else // if it isn't boundary.
+    {
+        //float rho = getLocalRho(x_out, y_out, NL);
+        float rho = 0;
+        for (int i = 0; i < NL; i++)
         {
-            F_bound_temp[i] = F[inverse_indexes[i]];
+            rho += F[i];
         }
+<<<<<<< HEAD:Shaders/Private/D2Q9CS.usf
         //F_bound_temp[0] = F[0];
         //F_bound_temp[1] = F[5];
         //F_bound_temp[2] = F[6];
@@ -205,10 +248,32 @@ void Main(uint3 DTid : SV_DispatchThreadID)
     
         //boundary here?
     }
+=======
+        for (int i = 0; i < NL; i++)
+        {
+            ux += F[i] * cxs[i];
+            uy += F[i] * cys[i];
+        }
+        ux /= rho;
+        uy /= rho;
+    
+        //COLLISION:
+        float Feq[9];
+        for (i = 0; i < NL; i++)
+        {
+            Feq[i] = rho * weights[i] * (1 + 3 * (cxs[i] * ux + cys[i] * uy) +
+                                   9 * pow(cxs[i] * ux + cys[i] * uy, 2) / 2 -
+                                   3 * (pow(ux, 2) + pow(uy, 2)) / 2);
+            F[i] += -(1.0 / Tau) * (F[i] - Feq[i]);
+        }
+    
+        //boundary here?
+    }
+>>>>>>> parent of 1c49ff3 (Drift/collision thread separation (#1)):Shaders/Private/D2Q9CS-drift.usf
         
     
     // F OUTPUT:
-    for (int i = 0; i < Q; i++)
+    for (int i = 0; i < NL; i++)
     {
         if (Iteration > 0)
         {
@@ -217,7 +282,11 @@ void Main(uint3 DTid : SV_DispatchThreadID)
     }
     
     // U OUTPUT:
+<<<<<<< HEAD:Shaders/Private/D2Q9CS.usf
     U[float2(x, y)] = float2(u.x, u.y);
+=======
+    U[float2(x, y)] = float2(ux, uy);
+>>>>>>> parent of 1c49ff3 (Drift/collision thread separation (#1)):Shaders/Private/D2Q9CS-drift.usf
     
     
     // TEST POROUS OUTPUT:

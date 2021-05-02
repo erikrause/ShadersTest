@@ -11,18 +11,18 @@ struct  FWhiteNoiseCSParameters
 
 	FIntPoint GetRenderTargetSize() const
 	{
-		return _cachedRenderTargetSize;
+		return CachedRenderTargetSize;
 	}
 
 	FWhiteNoiseCSParameters() { }
 	FWhiteNoiseCSParameters(UTextureRenderTarget2D* IORenderTarget)
 		: FRenderTarget(IORenderTarget)
 	{
-		_cachedRenderTargetSize = FRenderTarget ? FIntPoint(FRenderTarget->SizeX, FRenderTarget->SizeY) : FIntPoint::ZeroValue;
+		CachedRenderTargetSize = FRenderTarget ? FIntPoint(FRenderTarget->SizeX, FRenderTarget->SizeY) : FIntPoint::ZeroValue;
 	}
 
 private:
-	FIntPoint _cachedRenderTargetSize;
+	FIntPoint CachedRenderTargetSize;
 public:
 	uint32 TimeStamp;
 };

@@ -114,7 +114,7 @@ void FD2Q9CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList, 
 	// Test resource array. Sources: https://forums.unrealengine.com/t/get-data-back-from-compute-shader/12880 ,
 	// https://cpp.hotexamples.com/ru/examples/-/TResourceArray/AddUninitialized/cpp-tresourcearray-adduninitialized-method-examples.html , 
 	// https://veldrid.dev/articles/shaders.html
-	TResourceArray<int> porousBuffer;		// TODO: кэшировать буфер.
+	TResourceArray<int> porousBuffer;
 	porousBuffer.Append(cachedParams.PorousDataArray, 64 * 64 * 64);
 	FRHIResourceCreateInfo CreateInfo;
 	CreateInfo.ResourceArray = &porousBuffer;

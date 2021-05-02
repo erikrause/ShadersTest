@@ -1,14 +1,14 @@
 PRAGMA_DISABLE_OPTIMIZATION
 
-#include "LBMActor.h"
+#include "LBMActor3D.h"
 #include "Amaretto.h"
 
 #include "Kismet/GameplayStatics.h"
 #include <Runtime/Engine/Classes/Kismet/KismetRenderingLibrary.h>
-#include "CustomShadersDeclarations/D2Q9CSManager.h"
+#include "CustomShadersDeclarations/D3Q19CSManager.h"
 
 // Sets default values
-ALBMActor::ALBMActor()
+ALBMActor3D::ALBMActor3D()
 {
  	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -25,10 +25,10 @@ ALBMActor::ALBMActor()
 }
 
 // Called when the game starts or when spawned
-void ALBMActor::BeginPlay()
+void ALBMActor3D::BeginPlay()
 {
 	Super::BeginPlay();
-	FD2Q9CSManager::Get()->BeginRendering();
+	FD3Q19CSManager::Get()->BeginRendering();
 
 	// TODO: try to use ENQUEUE_RENDER_COMMAND: https://coderoad.ru/59638346/%D0%9A%D0%B0%D0%BA-%D0%B2%D1%8B-%D0%B4%D0%B8%D0%BD%D0%B0%D0%BC%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8-%D0%BE%D0%B1%D0%BD%D0%BE%D0%B2%D0%BB%D1%8F%D0%B5%D1%82%D0%B5-UTextureRenderTarget2D-%D0%B2-C
 	// ÈËÈ: try to get RHICmdList like here: https://github.com/runedegroot/UE4MarchingCubesGPU/blob/master/Plugins/MarchingCubesComputeShader/Source/MarchingCubesComputeShader/Private/MarchingCubesComputeHelper.cpp
@@ -42,14 +42,14 @@ void ALBMActor::BeginPlay()
 	textureResource = (FTextureRenderTarget2DResource*)FRenderTarget->Resource;
 }
 
-void ALBMActor::BeginDestroy()
+void ALBMActor3D::BeginDestroy()
 {
-	FD2Q9CSManager::Get()->EndRendering();
+	FD3Q19CSManager::Get()->EndRendering();
 	Super::BeginDestroy();
 }
 
 // Called every frame
-void ALBMActor::Tick(float DeltaTime)
+void ALBMActor3D::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	iteration++;
@@ -60,45 +60,46 @@ void ALBMActor::Tick(float DeltaTime)
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Iteration: %i"), iteration));
 
 	//Update parameters
-	D2Q9CSParameters parameters(FRenderTarget, URenderTarget, porousDataArray);
+	D3Q19CSParameters parameters(FRenderTarget, URenderTarget, porousDataArray, LatticeDims);
 	parameters.Iteration = iteration;
-	FD2Q9CSManager::Get()->UpdateParameters(parameters);
+	FD3Q19CSManager::Get()->UpdateParameters(parameters);
+	
 	auto probTex = FRenderTarget->GameThread_GetRenderTargetResource();
 	//probTex->
 
-	if (FRenderTarget != NULL)
-	{
-		TArray<FLinearColor> colorBuffer;
-		if (textureResource->ReadLinearColorPixels(colorBuffer))
-		{
-			int Nx = 400;
-			int x = 0;
-			int y = 0;
-			TArray<float> vels;
+	//if (FRenderTarget != NULL)
+	//{
+	//	TArray<FLinearColor> colorBuffer;
+	//	if (textureResource->ReadLinearColorPixels(colorBuffer))
+	//	{
+	//		int Nx = 400;
+	//		int x = 0;
+	//		int y = 0;
+	//		TArray<float> vels;
 
-			for (x = 0; x < 6; x++)
-			{
-				for (int i = 0; i < 9; i++)
-				{
-					int id = x + y * 9 * Nx + i * Nx;
-					vels.Add(colorBuffer[id].R);
-				}
-			}
+	//		for (x = 0; x < 6; x++)
+	//		{
+	//			for (int i = 0; i < 9; i++)
+	//			{
+	//				int id = x + y * 9 * Nx + i * Nx;
+	//				vels.Add(colorBuffer[id].R);
+	//			}
+	//		}
 
-			TArray<float> vels2;
+	//		TArray<float> vels2;
 
-			for (x = 390; x < Nx; x++)
-			{
-				for (int i = 0; i < 9; i++)
-				{
-					int id = x + y * 9 * Nx + i * Nx;
-					vels2.Add(colorBuffer[id].R);
-				}
-			}
+	//		for (x = 390; x < Nx; x++)
+	//		{
+	//			for (int i = 0; i < 9; i++)
+	//			{
+	//				int id = x + y * 9 * Nx + i * Nx;
+	//				vels2.Add(colorBuffer[id].R);
+	//			}
+	//		}
 
-			int prob2 = 0;
-		}
-	}
+	//		int prob2 = 0;
+	//	}
+	//}
 		//// ->GetRenderTargetResource();
 		//TArray<FFloat16Color> ColorBuffer16;
 		//if (textureResource->ReadFloat16Pixels(ColorBuffer16))

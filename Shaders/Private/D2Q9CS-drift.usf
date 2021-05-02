@@ -21,7 +21,6 @@
 //Nx = 400    // resolution x-dir
 //Ny = 100    // resolution y-dir
 float Rho0; // = 100; // average density
-static float Tau = 1.6; // collision timescale
 
 StructuredBuffer<int> PorousData;
 
@@ -45,8 +44,8 @@ SamplerState F_SamplerState;
 
 bool isBoundary(int x, int y)
 {
-    //return PorousData[x + y * Nx] == 0;
-    return ((pow((x - Nx / 4), 2) + pow((y - Ny / 2), 2)) < pow((Ny / 4), 2));
+    return PorousData[x + y * Nx] == 0;
+    //return ((pow((x - Nx / 4), 2) + pow((y - Ny / 2), 2)) < pow((Ny / 4), 2)); //  (x > 0 && x < 3 && y > -1 && y < 2)
 }
 
 void initArray(int x, int y, int x_tex, int y_tex)
@@ -77,7 +76,7 @@ void initArray(int x, int y, int x_tex, int y_tex)
         
         
     // Граничное условие:
-    if (isBoundary(x, y)) //((pow((x - Nx / 4), 2) + pow((y - Ny / 2), 2)) < pow((Ny / 4), 2))   //  (x > 0 && x < 3 && y > -1 && y < 2)
+    if (isBoundary(x, y)) 
     {
         for (int i = 0; i < Q; i++)
         {
@@ -89,6 +88,7 @@ void initArray(int x, int y, int x_tex, int y_tex)
 [numthreads(THREADGROUPSIZE_X, THREADGROUPSIZE_Y, THREADGROUPSIZE_Z)]
 void Main(uint3 DTid : SV_DispatchThreadID)
 {
+    // INIT:
     // Координаты рассчетной сетки:
     int x = DTid.x;
     int y = DTid.y;
@@ -103,6 +103,13 @@ void Main(uint3 DTid : SV_DispatchThreadID)
         initArray(x, y, x_out, y_out);
     }
     
+    float F[Q];
+    for (int i = 0; i < Q; i++)
+    {
+        F[i] = F_in[float2(x_out, y_out + i)];
+    }
+    
+        
     // DRIFT:
     //// Drift particles (with sampling): - TODO: test sampling vs indexing vs lerp perfomance.
     //float2 uv;
@@ -110,14 +117,6 @@ void Main(uint3 DTid : SV_DispatchThreadID)
     //uv.y = (y_out + 3 + 0.5) / (Ny * 9);
     ////float prob = F_in.Sample(samplerState, uv);
     //F_out[float2(x_out, y_out + 3)] = F_in.SampleLevel(F_SamplerState, uv, 0);
-    
-    
-    float F[Q];
-    for (int i = 0; i < Q; i++)
-    {
-        F[i] = F_in[float2(x_out, y_out + i)];
-    }
-    //F[0] = F_in[float2(x_out, y_out)];
     
     // Drift particles to neighbours (with indexing):
     for (int neighbour_id = 0; neighbour_id < Q; neighbour_id++)
@@ -136,13 +135,14 @@ void Main(uint3 DTid : SV_DispatchThreadID)
         }
 
         int neighbour_y_out = neighbour_y * 9;
-        
-        //F_out[float2(x_out, y_out + neighbour_id)] = F_in[float2(neighbour_x, neighbour_y_out + neighbour_id)];
+
         F[neighbour_id] = F_in[float2(neighbour_x, neighbour_y_out + neighbour_id)];
     }
     
+    
+    // REFLECT:
     float F_bound_temp[Q];
-    // Check is cylinder and reflect: TODO: set boundaries outside.
+    // Check is boundary and reflect:
     if (isBoundary(x, y)) //((pow((x - Nx / 4), 2) + pow((y - Ny / 2), 2)) < pow((Ny / 4), 2))
     {
         for (int i = 0; i < Q; i ++)
@@ -151,13 +151,9 @@ void Main(uint3 DTid : SV_DispatchThreadID)
         }
         F = F_bound_temp;
     }
-    //else // if it isn't boundary.
-    //{
-
-    //}
         
     
-    // F OUTPUT:
+    // OUTPUT:
     for (int i = 0; i < Q; i++)
     {
         if (Iteration > 0)
@@ -166,14 +162,7 @@ void Main(uint3 DTid : SV_DispatchThreadID)
         }
     }
     
-    
-    // TEST POROUS OUTPUT:
-    //int value = PorousData[x + y * Nx];
-    //U[float2(x, y)] = float2(value, 0);  // test porous data out.
-    
-    
     // VORTICITY:
     //Vorticity = 
     //vorticity = (np.roll(ux, -1, axis=0) - np.roll(ux, 1, axis=0)) - (np.roll(uy, -1, axis=1) - np.roll(uy, 1, axis=1))
-    
 }

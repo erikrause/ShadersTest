@@ -1,0 +1,167 @@
+#include "/Engine/Public/Platform.ush"
+
+float Rho0; // = 100; // average density
+
+StructuredBuffer<int> PorousData; //[2048]; //[40000];
+
+int Iteration;
+int Nx;
+int Ny;
+int Nz;
+
+Texture2D<float> F_in;     // F with current t
+RWTexture2D<float> F_out;  // t + 1
+
+static const int Q = 19;
+
+// INDEXES:          0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18.
+static int cxs[] = { 0,  1, -1,  0,  0,  0,  0,  1, -1,  1, -1,  1, -1,  1, -1,  0,  0,  0,  0 };
+static int cys[] = { 0,  0,  0,  1, -1,  0,  0,  1, -1, -1,  1,  0,  0,  0,  0,  1, -1,  1, -1 };
+static int czs[] = { 0,  0,  0,  0,  0,  1, -1,  0,  0,  0,  0,  1, -1, -1,  1,  1, -1, -1,  1 };
+static int inverse_indexes[] =  
+                   { 0,  2,  1,  4,  3,  6,  5,  8,  7, 10,  9, 12, 11, 14, 13, 16, 15, 18, 17 };
+
+static const float PI = 3.14159265f;
+
+SamplerState F_SamplerState;    // не используется.
+
+bool isBoundary(int x, int y, int z)
+{
+    return PorousData[x + y * Nx + z * Nx * Ny] == 0;
+    //return x == 0 || x == 63 || y == 0 || y == 63 || z == 0 || z == 63;
+    //return ((pow((x - Nx / 4), 2) + pow((y - Ny / 2), 2)) < pow((Ny / 4), 2)); // || (x==62 || x==63);
+}
+
+void initArray(int x, int y, int z, int x_tex, int y_tex)
+{
+    //Fill init velocities:
+    for (int i = 0; i < Q; i++)
+    {
+        F_out[float2(x_tex, y_tex + i)] = 1;
+    }
+    // TODO: F_out[x][y] += rand;   - (добавить флуктуации)
+        
+        
+    // Задаем направление потока по направлению (1, 0, 0):
+    F_out[float2(x_tex, y_tex + 1)] += 2 * (1 + 0.2 * cos(2 * PI * x / Nx * 4));
+        
+    
+    
+    // Нормализуем распределение направлений частиц по глобальной плотности:
+    float rho = 0; // текущая локальная плотность.
+    for (i = 0; i < Q; i++)
+    {
+        rho += F_out[float2(x_tex, y_tex + i)];
+    }
+    for (i = 0; i < Q; i++)
+    {
+        F_out[float2(x_tex, y_tex + i)] *= Rho0 / rho;
+    }
+        
+        
+    // Граничное условие:
+    if (isBoundary(x, y, z)) //((pow((x - Nx / 4), 2) + pow((y - Ny / 2), 2)) < pow((Ny / 4), 2))   //  (x > 0 && x < 3 && y > -1 && y < 2)
+    {
+        for (int i = 0; i < Q; i++)
+        {
+            F_out[float2(x_tex, y_tex + i)] = 0;
+        }
+    }
+}
+
+
+[numthreads(THREADGROUPSIZE_X, THREADGROUPSIZE_Y, THREADGROUPSIZE_Z)]
+void Main(uint3 DTid : SV_DispatchThreadID)
+{
+    // INIT:
+    // Координаты рассчетной сетки LBM:
+    // поскольку текстура RenderTarget двумерная, то в измерениях текстуры x хранятся несколько измерений массива LBM:
+    // - в X текстуры: X и Z пространства узлов;
+    // - в Y текстуры: Y пространства узлов и Q направлений скоростей скоростей каждого узла.
+    const int x = DTid.x % Nz;
+    const int y = DTid.y;
+    const int z = DTid.x / Nz;
+    
+    // Текстурные координаты (2D): в одном потоке мы обрабатываем все направления скоростей, поэтому расширяем y в тестуре.
+    const int x_out = DTid.x;
+    const int y_out = DTid.y * Q; // масштабируем Y {0..100} -> Y {0..900}, т.к. в одном узле сетки надо хранить 9 значений скорости (для каждого нарпавления).
+    
+    float3 u = float3(0, 0, 0);
+    
+    if (Iteration == 0)
+    {
+        initArray(x, y, z, x_out, y_out);   // TODO: init outside the shader.
+    }
+    
+    float F[Q];
+    for (int i = 0; i < Q; i++)
+    {
+        F[i] = F_in[float2(x_out, y_out + i)];
+    }
+    
+        
+    // DRIFT:
+    //// Drift particles (with sampling): - TODO: test sampling vs indexing vs lerp perfomance.
+    //float2 uv;
+    //uv.x = (x_out - 0.5) / Nx;
+    //uv.y = (y_out + 3 + 0.5) / (Ny * 9);
+    ////float prob = F_in.Sample(samplerState, uv);
+    //F_out[float2(x_out, y_out + 3)] = F_in.SampleLevel(F_SamplerState, uv, 0);
+    
+    
+    // Drift particles to neighbours (with indexing):
+    for (int neighbour_id = 0; neighbour_id < Q; neighbour_id++)
+    {
+        int neighbour_x = x - cxs[neighbour_id];
+        int neighbour_y = y - cys[neighbour_id];
+        int neighbour_z = z - czs[neighbour_id];
+
+        // замыкаем границы:
+        if ((neighbour_x == -1) || (neighbour_x == Nx))
+        {
+            neighbour_x = abs(abs(neighbour_x) - Nx);
+        }
+        if ((neighbour_y == -1) || (neighbour_y == Ny))
+        {
+            neighbour_y = abs(abs(neighbour_y) - Ny);
+        }
+        if ((neighbour_z == -1) || (neighbour_z == Nz))
+        {
+            neighbour_z = abs(abs(neighbour_z) - Nz);
+        }
+
+        int neighbour_y_out = neighbour_y * Q;
+        
+        F[neighbour_id] = F_in[float2(neighbour_x + neighbour_z * Nx, neighbour_y_out + neighbour_id)];
+        //F[neighbour_id] = F_in[float2(neighbour_x, neighbour_y_out + neighbour_id)];  // was for 2D.
+    }
+    
+    
+    // REFLECT:
+    float F_bound_temp[Q];
+    // Check is boundary and reflect:
+    if (isBoundary(x, y, z)) //((pow((x - Nx / 4), 2) + pow((y - Ny / 2), 2)) < pow((Ny / 4), 2))
+    {
+        for (int i = 0; i < Q; i++)
+        {
+            F_bound_temp[i] = F[inverse_indexes[i]];
+        }
+        F = F_bound_temp;
+    }
+        
+    
+    // OUTPUT:
+    for (int i = 0; i < Q; i++)
+    {
+        if (Iteration > 0)
+        {
+            F_out[float2(x_out, y_out + i)] = F[i];
+        }
+    }
+
+    
+    // VORTICITY:
+    //Vorticity = 
+    //vorticity = (np.roll(ux, -1, axis=0) - np.roll(ux, 1, axis=0)) - (np.roll(uy, -1, axis=1) - np.roll(uy, 1, axis=1))
+    
+}

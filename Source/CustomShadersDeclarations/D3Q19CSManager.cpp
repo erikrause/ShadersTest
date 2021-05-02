@@ -1,8 +1,7 @@
 PRAGMA_DISABLE_OPTIMIZATION
 
 #include "D3Q19CSManager.h"
-#include "D3Q19CSDrift.h"
-#include "D3Q19CSCollision.h"
+#include "D3Q19CS.h"
 
 #include "RenderGraphUtils.h"
 #include "RenderTargetPool.h"
@@ -126,54 +125,43 @@ void FD3Q19CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList,
 		BUF_UnorderedAccess | BUF_ShaderResource,
 		CreateInfo
 	);
-	FShaderResourceViewRHIRef PorousStructSRV = RHICreateShaderResourceView(StructResource);
+	FShaderResourceViewRHIRef StructSRV = RHICreateShaderResourceView(StructResource);
 	//FUnorderedAccessViewRHIRef StructUAV = RHICreateUnorderedAccessView(StructResource, false, false);
 
 
 	//Fill the shader parameters structure with tha cached data supplied by the client
-	FD3Q19CSDrift::FParameters DriftCSParameters;
-	DriftCSParameters.PorousData = PorousStructSRV;
-	DriftCSParameters.F_SamplerState = RHICreateSamplerState(SamplerStateInitializer);
-	DriftCSParameters.F_in = cachedParams.FRenderTarget->GetRenderTargetResource()->TextureRHI;
-	DriftCSParameters.F_out = FPooledRenderTarget->GetRenderTargetItem().UAV;
-	DriftCSParameters.Rho0 = 100;
-	DriftCSParameters.Iteration = cachedParams.Iteration;
-	//DriftCSParameters.Tau = 0.6;
-	DriftCSParameters.Nx = cachedParams.GetRenderTargetSize().X;
-	DriftCSParameters.Ny = cachedParams.GetRenderTargetSize().Y / 9;
+	FD3Q19CS::FParameters PassParameters;
+	PassParameters.PorousData = StructSRV;
+	//PassParameters.PorousData = cachedParams.PorousDataArray;
+	PassParameters.F_SamplerState = RHICreateSamplerState(SamplerStateInitializer);
+	PassParameters.F_in = cachedParams.FRenderTarget->GetRenderTargetResource()->TextureRHI;
+	PassParameters.F_out = FPooledRenderTarget->GetRenderTargetItem().UAV;
+	PassParameters.Rho0 = 100;
+	PassParameters.Iteration = cachedParams.Iteration;
+	//PassParameters.Tau = 0.6;
 
-	FD3Q19CSCollision::FParameters CollisionCSParameters;
-	CollisionCSParameters.F_in = cachedParams.FRenderTarget->GetRenderTargetResource()->TextureRHI;
-	CollisionCSParameters.F_out = FPooledRenderTarget->GetRenderTargetItem().UAV;
-	CollisionCSParameters.Iteration = cachedParams.Iteration;
-	CollisionCSParameters.Nx = cachedParams.GetLatticeDims().X;
-	CollisionCSParameters.Ny = cachedParams.GetLatticeDims().Y;
-	CollisionCSParameters.Nz = cachedParams.GetLatticeDims().Z;
-	CollisionCSParameters.PorousData = PorousStructSRV;
-	CollisionCSParameters.U = UPooledRenderTarget->GetRenderTargetItem().UAV;
+	PassParameters.Nx = cachedParams.GetRenderTargetSize().X;
+	PassParameters.Ny = cachedParams.GetRenderTargetSize().Y / 9;
+	PassParameters.U = UPooledRenderTarget->GetRenderTargetItem().UAV;
+	//PassParameters.Dimensions = FVector2D(cachedParams.GetRenderTargetSize().X, cachedParams.GetRenderTargetSize().Y);
+	//PassParameters.TimeStamp = cachedParams.TimeStamp;
 
 	//Get a reference to our shader type from global shader map
-	TShaderMapRef<FD3Q19CSDrift> D3Q19CSDrift(GetGlobalShaderMap(GMaxRHIFeatureLevel));
-	TShaderMapRef<FD3Q19CSCollision> D3Q19CSCollision(GetGlobalShaderMap(GMaxRHIFeatureLevel));
+	TShaderMapRef<FD3Q19CS> D3Q19CS(GetGlobalShaderMap(GMaxRHIFeatureLevel));
 
 	clock_t start, end;
 
 	start = clock();
 
-	FComputeShaderUtils::Dispatch(RHICmdList, D3Q19CSDrift, DriftCSParameters,
-		FIntVector(FMath::DivideAndRoundUp(cachedParams.GetRenderTargetSize().X, NUM_THREADS_PER_GROUP_DIMENSION),
-			FMath::DivideAndRoundUp(cachedParams.GetRenderTargetSize().Y / 9, NUM_THREADS_PER_GROUP_DIMENSION), 1));
-
-	RHICmdList.CopyTexture(FPooledRenderTarget->GetRenderTargetItem().ShaderResourceTexture, cachedParams.FRenderTarget->GetRenderTargetResource()->TextureRHI, FRHICopyTextureInfo());
-
-	FComputeShaderUtils::Dispatch(RHICmdList, D3Q19CSCollision, CollisionCSParameters,
+	//Dispatch the compute shader
+	FComputeShaderUtils::Dispatch(RHICmdList, D3Q19CS, PassParameters,
 		FIntVector(FMath::DivideAndRoundUp(cachedParams.GetRenderTargetSize().X, NUM_THREADS_PER_GROUP_DIMENSION),
 			FMath::DivideAndRoundUp(cachedParams.GetRenderTargetSize().Y / 9, NUM_THREADS_PER_GROUP_DIMENSION), 1));
 
 	//Copy shader's output to the render target provided by the client
 	RHICmdList.CopyTexture(FPooledRenderTarget->GetRenderTargetItem().ShaderResourceTexture, cachedParams.FRenderTarget->GetRenderTargetResource()->TextureRHI, FRHICopyTextureInfo());
 	RHICmdList.CopyTexture(UPooledRenderTarget->GetRenderTargetItem().ShaderResourceTexture, cachedParams.URenderTarget->GetRenderTargetResource()->TextureRHI, FRHICopyTextureInfo());
-	//RHICmdList.SetComputeShader(D3Q19CSDrift.GetComputeShader());	// зачем?
+	//RHICmdList.SetComputeShader(D3Q19CS.GetComputeShader());	// зачем?
 
 	end = clock();
 

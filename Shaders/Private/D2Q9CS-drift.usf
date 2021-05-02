@@ -21,6 +21,7 @@
 //Nx = 400    // resolution x-dir
 //Ny = 100    // resolution y-dir
 float Rho0; // = 100; // average density
+static float Tau = 1.6; // collision timescale
 
 StructuredBuffer<int> PorousData;
 
@@ -45,7 +46,7 @@ SamplerState F_SamplerState;
 bool isBoundary(int x, int y)
 {
     //return PorousData[x + y * Nx] == 0;
-    return ((pow((x - Nx / 4), 2) + pow((y - Ny / 2), 2)) < pow((Ny / 4), 2)); //  (x > 0 && x < 3 && y > -1 && y < 2)
+    return ((pow((x - Nx / 4), 2) + pow((y - Ny / 2), 2)) < pow((Ny / 4), 2));
 }
 
 void initArray(int x, int y, int x_tex, int y_tex)
@@ -76,7 +77,7 @@ void initArray(int x, int y, int x_tex, int y_tex)
         
         
     // Граничное условие:
-    if (isBoundary(x, y)) 
+    if (isBoundary(x, y)) //((pow((x - Nx / 4), 2) + pow((y - Ny / 2), 2)) < pow((Ny / 4), 2))   //  (x > 0 && x < 3 && y > -1 && y < 2)
     {
         for (int i = 0; i < Q; i++)
         {
@@ -116,6 +117,7 @@ void Main(uint3 DTid : SV_DispatchThreadID)
     {
         F[i] = F_in[float2(x_out, y_out + i)];
     }
+    //F[0] = F_in[float2(x_out, y_out)];
     
     // Drift particles to neighbours (with indexing):
     for (int neighbour_id = 0; neighbour_id < Q; neighbour_id++)
@@ -134,12 +136,13 @@ void Main(uint3 DTid : SV_DispatchThreadID)
         }
 
         int neighbour_y_out = neighbour_y * 9;
-
+        
+        //F_out[float2(x_out, y_out + neighbour_id)] = F_in[float2(neighbour_x, neighbour_y_out + neighbour_id)];
         F[neighbour_id] = F_in[float2(neighbour_x, neighbour_y_out + neighbour_id)];
     }
     
     float F_bound_temp[Q];
-    // Check is boundary and reflect:
+    // Check is cylinder and reflect: TODO: set boundaries outside.
     if (isBoundary(x, y)) //((pow((x - Nx / 4), 2) + pow((y - Ny / 2), 2)) < pow((Ny / 4), 2))
     {
         for (int i = 0; i < Q; i ++)

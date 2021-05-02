@@ -6,13 +6,13 @@
 /// <summary>
 /// Internal class thet holds the parameters and connects the HLSL Shader to the engine
 /// </summary>
-class FD3Q19CSDrift : public FGlobalShader
+class FD3Q19CS : public FGlobalShader
 {
 public:
 	//Declare this class as a global shader
-	DECLARE_GLOBAL_SHADER(FD3Q19CSDrift);
+	DECLARE_GLOBAL_SHADER(FD3Q19CS);
 	//Tells the engine that this shader uses a structure for its parameters
-	SHADER_USE_PARAMETER_STRUCT(FD3Q19CSDrift, FGlobalShader);
+	SHADER_USE_PARAMETER_STRUCT(FD3Q19CS, FGlobalShader);
 	/// <summary>
 	/// DECLARATION OF THE PARAMETER STRUCTURE
 	/// The parameters must match the parameters in the HLSL code
@@ -26,6 +26,7 @@ public:
 		SHADER_PARAMETER_SAMPLER(SamplerState, F_SamplerState)
 		SHADER_PARAMETER_TEXTURE(Texture2D<float>, F_in)
 		SHADER_PARAMETER_UAV(RWTexture2D<float>, F_out)
+		SHADER_PARAMETER_UAV(RWTexture2D<float3>, U)
 		SHADER_PARAMETER(float, Rho0)
 		//SHADER_PARAMETER(float, Tau)
 		SHADER_PARAMETER(int, Iteration)
@@ -56,4 +57,4 @@ public:
 
 // This will tell the engine to create the shader and where the shader entry point is.
 //                        ShaderType              ShaderPath             Shader function name    Type
-IMPLEMENT_GLOBAL_SHADER(FD3Q19CSDrift, "/CustomShaders/D3Q19CS-drift.usf", "Main", SF_Compute);
+IMPLEMENT_GLOBAL_SHADER(FD3Q19CS, "/CustomShaders/D3Q19CS.usf", "Main", SF_Compute);

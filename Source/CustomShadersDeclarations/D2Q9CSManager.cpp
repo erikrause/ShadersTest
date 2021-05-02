@@ -144,7 +144,7 @@ void FD2Q9CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList, 
 
 	FD2Q9CSCollision::FParameters CollisionCSParameters;
 	CollisionCSParameters.U = UPooledRenderTarget->GetRenderTargetItem().UAV;
-	CollisionCSParameters.F_in = cachedParams.FRenderTarget->GetRenderTargetResource()->TextureRHI;		// FPooledRenderTarget->GetRenderTargetItem().ShaderResourceTexture;
+	CollisionCSParameters.F_in = cachedParams.FRenderTarget->GetRenderTargetResource()->TextureRHI;		// TODO: сделать через FPooledRenderTarget->GetRenderTargetItem().ShaderResourceTexture;
 	CollisionCSParameters.F_out = FPooledRenderTarget->GetRenderTargetItem().UAV;
 	CollisionCSParameters.Iteration = cachedParams.Iteration;
 	CollisionCSParameters.Nx = cachedParams.GetRenderTargetSize().X;

@@ -1,27 +1,6 @@
-//// MyTest.usf
- 
-//// Simple pass-through vertex shader
-//void MainVS(
-// in float4 InPosition : ATTRIBUTE0,
-// out float4 Output : SV_POSITION
-//)
-//{
-//    Output = InPosition;
-//}
- 
-//// Simple solid color pixel shader
-//float4 MyColor;
-//float4 MainPS() : SV_Target0
-//{
-//    return MyColor;
-//}
-
 #include "/Engine/Public/Platform.ush"
 
-//Nx = 400    // resolution x-dir
-//Ny = 100    // resolution y-dir
-float Rho0; // = 100; // average density
-static float Tau = 0.6; // collision timescale
+static float Tau = 1.6; // collision timescale
 
 StructuredBuffer<int> PorousData; //[2048]; //[40000];
 
@@ -57,8 +36,6 @@ static float weights[] =
 
 static const float PI = 3.14159265f;
 
-SamplerState F_SamplerState;    // не используетс€.
-
 bool isBoundary(int x, int y, int z)
 {
     return PorousData[x + y * Nx + z * Nx * Ny] == 0;
@@ -73,43 +50,6 @@ float getLocalRho(float f[Q])
     }
     
     return rho;
-}
-
-void initArray(int x, int y, int z, int x_tex, int y_tex)
-{
-    //Fill init velocities:
-    for (int i = 0; i < Q; i++)
-    {
-        F_out[float2(x_tex, y_tex + i)] = 1;
-    }
-    // TODO: F_out[x][y] += rand;   - (добавить флуктуации)
-        
-        
-    // «адаем направление потока по направлению (1, 0, 0):
-    F_out[float2(x_tex, y_tex + 1)] += 2 * (1 + 0.2 * cos(2 * PI * x / Nx * 4));
-        
-    
-    
-    // Ќормализуем распределение направлений частиц по глобальной плотности:
-    float rho = 0; // текуща€ локальна€ плотность.
-    for (i = 0; i < Q; i++)
-    {
-        rho += F_out[float2(x_tex, y_tex + i)];
-    }
-    for (i = 0; i < Q; i++)
-    {
-        F_out[float2(x_tex, y_tex + i)] *= Rho0 / rho;
-    }
-        
-        
-    // √раничное условие:
-    if (isBoundary(x, y, z)) //((pow((x - Nx / 4), 2) + pow((y - Ny / 2), 2)) < pow((Ny / 4), 2))   //  (x > 0 && x < 3 && y > -1 && y < 2)
-    {
-        for (int i = 0; i < Q; i++)
-        {
-            F_out[float2(x_tex, y_tex + i)] = 0;
-        }
-    }
 }
 
 [numthreads(THREADGROUPSIZE_X, THREADGROUPSIZE_Y, THREADGROUPSIZE_Z)]
@@ -128,67 +68,15 @@ void Main(uint3 DTid : SV_DispatchThreadID)
     int y_out = DTid.y * Q;    // масштабируем Y {0..100} -> Y {0..900}, т.к. в одном узле сетки надо хранить 9 значений скорости (дл€ каждого нарпавлени€).
     
     float3 u = float3(0, 0, 0);
-    //float ux = 0;
-    //float uy = 0;
-    
-    if (Iteration == 0)
-    {
-        initArray(x, y, z, x_out, y_out);
-    }
-    
-    
-    // DRIFT:
-    //// Drift particles (with sampling): - TODO: test sampling vs indexing vs lerp perfomance.
-    //float2 uv;
-    //uv.x = (x_out - 0.5) / Nx;
-    //uv.y = (y_out + 3 + 0.5) / (Ny * 9);
-    ////float prob = F_in.Sample(samplerState, uv);
-    //F_out[float2(x_out, y_out + 3)] = F_in.SampleLevel(F_SamplerState, uv, 0);
-    
     
     float F[Q]; // TODO: перенести в регистровую или раздел€емую пам€ть.
     for (int i = 0; i < Q; i++)
     {
         F[i] = F_in[float2(x_out, y_out + i)];
     }
-    //F[0] = F_in[float2(x_out, y_out)];
     
-    // Drift particles to neighbours (with indexing):
-    for (int neighbour_id = 0; neighbour_id < Q; neighbour_id++)
-    {
-        int neighbour_x = x - cxs[neighbour_id];
-        int neighbour_y = y - cys[neighbour_id];
-        int neighbour_z = z - czs[neighbour_id];
-
-        // замыкаем границы:
-        if ((neighbour_x == -1) || (neighbour_x == Nx))
-        {
-            neighbour_x = abs(abs(neighbour_x) - Nx);
-        }
-        if ((neighbour_y == -1) || (neighbour_y == Ny))
-        {
-            neighbour_y = abs(abs(neighbour_y) - Ny);
-        }
-        if ((neighbour_z == -1) || (neighbour_z == Nz))
-        {
-            neighbour_z = abs(abs(neighbour_z) - Nz);
-        }
-
-        int neighbour_y_out = neighbour_y * 9;
-        
-        F[neighbour_id] = F_in[float2(neighbour_x, neighbour_y_out + neighbour_id)];
-    }
-    
-    float F_bound_temp[Q];
-    if (isBoundary(x, y, z)) //((pow((x - Nx / 4), 2) + pow((y - Ny / 2), 2)) < pow((Ny / 4), 2))
-    {
-        for (int i = 0; i < Q; i++)
-        {
-            F_bound_temp[i] = F[inverse_indexes[i]];
-        }
-        F = F_bound_temp;
-    }
-    else
+    float test = getLocalRho(F);
+    if (!isBoundary(x, y, z)) //((pow((x - Nx / 4), 2) + pow((y - Ny / 2), 2)) < pow((Ny / 4), 2))
     {
         float rho = getLocalRho(F);
         
@@ -206,12 +94,18 @@ void Main(uint3 DTid : SV_DispatchThreadID)
     
         //COLLISION:
         float Feq[Q];
+        float3 unit = float3(1, 1, 1); // единичный вектор.
         for (i = 0; i < Q; i++)
         {
-            Feq[i] = 0;
+            float3 e = float3(cxs[i], cys[i], czs[i]); // lattice direction.
+            
             //Feq[i] = rho * weights[i] * (1 + 3 * (cxs[i] * ux + cys[i] * uy) +
             //                       9 * pow(cxs[i] * ux + cys[i] * uy, 2) / 2 -
             //                       3 * (pow(ux, 2) + pow(uy, 2)) / 2);
+            Feq[i] = rho * weights[i] * (1 + 3 * dot(e * u, unit) +
+                                   9 * pow(dot(e * u, unit), 2) / 2 -
+                                   3 * dot(pow(u, 2), unit) / 2); // TODO: test 3D.
+            Feq[i] = 1;
             F[i] += -(1.0 / Tau) * (F[i] - Feq[i]);
         }
     
@@ -224,12 +118,12 @@ void Main(uint3 DTid : SV_DispatchThreadID)
     {
         if (Iteration > 0)
         {
-            F_out[float2(x_out, y_out + i)] = F[i];
+            F_out[float2(x_out, y_out + i)] = F[ i];
         }
     }
     
     // U OUTPUT:
-    //U[float2(x, y)] = float3(ux, uy, 0);
+    U[float2(x_out, y)] = float3(test, 0, 0); //float3(u.x, u.y, u.z);
     
     
     // TEST POROUS OUTPUT:

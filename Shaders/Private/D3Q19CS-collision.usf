@@ -75,7 +75,6 @@ void Main(uint3 DTid : SV_DispatchThreadID)
         F[i] = F_in[float2(x_out, y_out + i)];
     }
     
-    float test = getLocalRho(F);
     if (!isBoundary(x, y, z)) //((pow((x - Nx / 4), 2) + pow((y - Ny / 2), 2)) < pow((Ny / 4), 2))
     {
         float rho = getLocalRho(F);
@@ -105,7 +104,6 @@ void Main(uint3 DTid : SV_DispatchThreadID)
             Feq[i] = rho * weights[i] * (1 + 3 * dot(e * u, unit) +
                                    9 * pow(dot(e * u, unit), 2) / 2 -
                                    3 * dot(pow(u, 2), unit) / 2); // TODO: test 3D.
-            Feq[i] = 1;
             F[i] += -(1.0 / Tau) * (F[i] - Feq[i]);
         }
     
@@ -118,17 +116,17 @@ void Main(uint3 DTid : SV_DispatchThreadID)
     {
         if (Iteration > 0)
         {
-            F_out[float2(x_out, y_out + i)] = F[ i];
+            F_out[float2(x_out, y_out + i)] = F[i];
         }
     }
     
     // U OUTPUT:
-    U[float2(x_out, y)] = float3(test, 0, 0); //float3(u.x, u.y, u.z);
+    U[float2(x_out, y)] = u;
     
     
-    // TEST POROUS OUTPUT:
+    //// TEST POROUS OUTPUT:
     //int value = PorousData[x + y * Nx];
-    //U[float2(x, y)] = float2(value, 0);  // test porous data out.
+    //U[float2(x_out, y)] = float3(value, 0, 0); // test porous data out.
     
     
     // VORTICITY:

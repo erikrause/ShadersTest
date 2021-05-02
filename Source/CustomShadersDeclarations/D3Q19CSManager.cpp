@@ -139,8 +139,9 @@ void FD3Q19CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList,
 	DriftCSParameters.Rho0 = 100;
 	DriftCSParameters.Iteration = cachedParams.Iteration;
 	//DriftCSParameters.Tau = 0.6;
-	DriftCSParameters.Nx = cachedParams.GetRenderTargetSize().X;
-	DriftCSParameters.Ny = cachedParams.GetRenderTargetSize().Y / 9;
+	DriftCSParameters.Nx = cachedParams.GetLatticeDims().X;
+	DriftCSParameters.Ny = cachedParams.GetLatticeDims().Y;
+	DriftCSParameters.Nz = cachedParams.GetLatticeDims().Z;
 
 	FD3Q19CSCollision::FParameters CollisionCSParameters;
 	CollisionCSParameters.F_in = cachedParams.FRenderTarget->GetRenderTargetResource()->TextureRHI;
@@ -162,13 +163,13 @@ void FD3Q19CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList,
 
 	FComputeShaderUtils::Dispatch(RHICmdList, D3Q19CSDrift, DriftCSParameters,
 		FIntVector(FMath::DivideAndRoundUp(cachedParams.GetRenderTargetSize().X, NUM_THREADS_PER_GROUP_DIMENSION),
-			FMath::DivideAndRoundUp(cachedParams.GetRenderTargetSize().Y / 9, NUM_THREADS_PER_GROUP_DIMENSION), 1));
+			FMath::DivideAndRoundUp(cachedParams.GetRenderTargetSize().Y / 19, NUM_THREADS_PER_GROUP_DIMENSION), 1));
 
-	RHICmdList.CopyTexture(FPooledRenderTarget->GetRenderTargetItem().ShaderResourceTexture, cachedParams.FRenderTarget->GetRenderTargetResource()->TextureRHI, FRHICopyTextureInfo());
+	//RHICmdList.CopyTexture(FPooledRenderTarget->GetRenderTargetItem().ShaderResourceTexture, cachedParams.FRenderTarget->GetRenderTargetResource()->TextureRHI, FRHICopyTextureInfo());
 
-	FComputeShaderUtils::Dispatch(RHICmdList, D3Q19CSCollision, CollisionCSParameters,
-		FIntVector(FMath::DivideAndRoundUp(cachedParams.GetRenderTargetSize().X, NUM_THREADS_PER_GROUP_DIMENSION),
-			FMath::DivideAndRoundUp(cachedParams.GetRenderTargetSize().Y / 9, NUM_THREADS_PER_GROUP_DIMENSION), 1));
+	//FComputeShaderUtils::Dispatch(RHICmdList, D3Q19CSCollision, CollisionCSParameters,
+	//	FIntVector(FMath::DivideAndRoundUp(cachedParams.GetRenderTargetSize().X, NUM_THREADS_PER_GROUP_DIMENSION),
+	//		FMath::DivideAndRoundUp(cachedParams.GetRenderTargetSize().Y / 9, NUM_THREADS_PER_GROUP_DIMENSION), 1));
 
 	//Copy shader's output to the render target provided by the client
 	RHICmdList.CopyTexture(FPooledRenderTarget->GetRenderTargetItem().ShaderResourceTexture, cachedParams.FRenderTarget->GetRenderTargetResource()->TextureRHI, FRHICopyTextureInfo());

@@ -99,6 +99,7 @@ void ALBMActor3D::Tick(float DeltaTime)
 
 	//		int prob2 = 0;
 	//	}
+	//}
 		//// ->GetRenderTargetResource();
 		//TArray<FFloat16Color> ColorBuffer16;
 		//if (textureResource->ReadFloat16Pixels(ColorBuffer16))

@@ -66,38 +66,39 @@ void ALBMActor::Tick(float DeltaTime)
 	auto probTex = FRenderTarget->GameThread_GetRenderTargetResource();
 	//probTex->
 
-	//if (FRenderTarget != NULL)
-	//{
-	//	TArray<FLinearColor> colorBuffer;
-	//	if (textureResource->ReadLinearColorPixels(colorBuffer))
-	//	{
-	//		int Nx = 400;
-	//		int x = 0;
-	//		int y = 0;
-	//		TArray<float> vels;
+	if (FRenderTarget != NULL)
+	{
+		TArray<FLinearColor> colorBuffer;
+		if (textureResource->ReadLinearColorPixels(colorBuffer))
+		{
+			int Nx = 400;
+			int x = 0;
+			int y = 0;
+			TArray<float> vels;
 
-	//		for (x = 0; x < 6; x++)
-	//		{
-	//			for (int i = 0; i < 9; i++)
-	//			{
-	//				int id = x + y * 9 * Nx + i * Nx;
-	//				vels.Add(colorBuffer[id].R);
-	//			}
-	//		}
+			for (x = 0; x < 6; x++)
+			{
+				for (int i = 0; i < 9; i++)
+				{
+					int id = x + y * 9 * Nx + i * Nx;
+					vels.Add(colorBuffer[id].R);
+				}
+			}
 
-	//		TArray<float> vels2;
+			TArray<float> vels2;
 
-	//		for (x = 390; x < Nx; x++)
-	//		{
-	//			for (int i = 0; i < 9; i++)
-	//			{
-	//				int id = x + y * 9 * Nx + i * Nx;
-	//				vels2.Add(colorBuffer[id].R);
-	//			}
-	//		}
+			for (x = 390; x < Nx; x++)
+			{
+				for (int i = 0; i < 9; i++)
+				{
+					int id = x + y * 9 * Nx + i * Nx;
+					vels2.Add(colorBuffer[id].R);
+				}
+			}
 
-	//		int prob2 = 0;
-	//	}
+			int prob2 = 0;
+		}
+	}
 		//// ->GetRenderTargetResource();
 		//TArray<FFloat16Color> ColorBuffer16;
 		//if (textureResource->ReadFloat16Pixels(ColorBuffer16))

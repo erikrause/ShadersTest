@@ -27,7 +27,7 @@ struct D3Q19CSParameters
 		if (isOnlyXYDims)
 		{
 			FIntPoint XY = _cachedRenderTargetSize;
-			XY.Y /= 9;
+			XY.Y /= 19;
 			return XY;
 		}
 		else

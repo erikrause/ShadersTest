@@ -18,8 +18,8 @@ static const float PI = 3.14159265f;
 
 bool isBoundary(int x, int y)
 {
-    //return PorousData[x + y * Nx] == 0;
-    return ((pow((x - Nx / 4), 2) + pow((y - Ny / 2), 2)) < pow((Ny / 4), 2));
+    return PorousData[x + y * Nx] == 0;
+    //return ((pow((x - Nx / 4), 2) + pow((y - Ny / 2), 2)) < pow((Ny / 4), 2));
 }
 
 float getLocalRho(float f[Q])
@@ -37,12 +37,12 @@ float getLocalRho(float f[Q])
 void Main(uint3 DTid : SV_DispatchThreadID)
 {
     // Координаты рассчетной сетки:
-    int x = DTid.x;
-    int y = DTid.y;
+    const int x = DTid.x;
+    const int y = DTid.y;
     
     // координаты для F_out:
-    int x_out = DTid.x;
-    int y_out = DTid.y * 9;
+    const int x_out = DTid.x;
+    const int y_out = DTid.y * 9;
     
     float2 u = float2(0, 0);
     
@@ -51,9 +51,7 @@ void Main(uint3 DTid : SV_DispatchThreadID)
     {
         F[i] = F_in[float2(x_out, y_out + i)];
     }
-    
-    float test = getLocalRho(F);
-    float Feq[Q];
+
     if (!isBoundary(x, y))
     {
         float rho = getLocalRho(F);
@@ -66,7 +64,7 @@ void Main(uint3 DTid : SV_DispatchThreadID)
         u.x /= rho;
         u.y /= rho;
             
-        //float Feq[Q];
+        float Feq[Q];
         float2 unit = float2(1, 1); // единичный вектор.
         for (i = 0; i < Q; i++)
         {
@@ -89,7 +87,7 @@ void Main(uint3 DTid : SV_DispatchThreadID)
     }
     
     // U OUTPUT:
-    U[float2(x, y)] = float2(Feq[1], 0); //u;
+    U[float2(x, y)] = u;
     
     
     ////TEST POROUS OUTPUT:

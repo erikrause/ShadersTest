@@ -13,7 +13,7 @@ Texture2D<float> F_in;     // F with current t
 RWTexture2D<float> F_out;  // t + 1
 RWTexture2D<float3> U;
 
-static const int Q = 9;
+static const int Q = 19;
 ////static int idxs[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8 };  // не используется.
 //static int cxs[] = { 0, 0, 1, 1, 1, 0, -1, -1, -1 };
 //static int cys[] = { 0, 1, 1, 0, -1, -1, -1, 0, 1 };
@@ -65,7 +65,7 @@ void Main(uint3 DTid : SV_DispatchThreadID)
     
     // Текстурные координаты (2D): в одном потоке мы обрабатываем все направления скоростей, поэтому расширяем y в тестуре.
     int x_out = DTid.x;
-    int y_out = DTid.y * Q;    // масштабируем Y {0..100} -> Y {0..900}, т.к. в одном узле сетки надо хранить 9 значений скорости (для каждого нарпавления).
+    int y_out = DTid.y * Q;    // масштабируем Y {0..100} -> Y {0..900}, т.к. в одном узле сетки надо хранить 19 значений скорости (для каждого нарпавления).
     
     float3 u = float3(0, 0, 0);
     

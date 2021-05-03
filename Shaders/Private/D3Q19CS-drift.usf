@@ -43,7 +43,7 @@ void initArray(int x, int y, int z, int x_tex, int y_tex)
         
         
     // Задаем направление потока по направлению (1, 0, 0):
-    F_out[float2(x_tex, y_tex + 1)] += 2 * (1 + 0.2 * cos(2 * PI * x / Nx * 4));
+    F_out[float2(x_tex, y_tex + 1)] += 20 * (1 + 0.2 * cos(2 * PI * x / Nx * 4));
         
     
     

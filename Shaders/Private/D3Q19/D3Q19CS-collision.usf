@@ -4,13 +4,10 @@
 
 static float Tau = 1.6;
 int Iteration;
-int Nx;
-int Ny;
-int Nz;
 
 Texture2D<float> F_in;     // F with current t
 RWTexture2D<float> F_out;  // t + 1
-RWTexture2D<float3> U;
+RWTexture2D<float3> U;  // TODO: try Testure3D.
 StructuredBuffer<int> PorousData;
 
 bool isBoundary(int x, int y, int z)
@@ -51,7 +48,7 @@ void Main(uint3 DTid : SV_DispatchThreadID)
     float f[Q]; // TODO: перенести в регистровую или разделяемую память.
     for (i = 0; i < Q; i++)
     {
-        f[i] = F_in[float2(x_tex, y_tex + i)];
+        f[i] = F_in[int2(x_tex, y_tex + i)];
     }
     
     
@@ -87,12 +84,12 @@ void Main(uint3 DTid : SV_DispatchThreadID)
     {
         if (Iteration > 0)
         {
-            F_out[float2(x_tex, y_tex + i)] = f[i];
+            F_out[int2(x_tex, y_tex + i)] = f[i];
         }
     }
     
     // U OUTPUT:
-    U[float2(x_tex, y)] = u;
+    U[int2(x_tex, y)] = u;
     
     
     // VORTICITY:

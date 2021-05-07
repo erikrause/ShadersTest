@@ -39,7 +39,7 @@ void ALBMActor3D::BeginPlay()
 	MID->SetTextureParameterValue("InputTexture", (UTexture*)FRenderTarget);
 	//auto prob = (*RenderTarget).get;
 
-	textureResource = (FTextureRenderTarget2DResource*)FRenderTarget->Resource;
+	textureResource = (FTextureRenderTarget2DResource*)PosRenderTarget->Resource;
 }
 
 void ALBMActor3D::BeginDestroy()
@@ -53,53 +53,57 @@ void ALBMActor3D::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	iteration++;
-	if (iteration > 1000)
+	if (iteration > 200)
 	{
 		iteration = 0;
 	}
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Iteration: %i"), iteration));
 
 	//Update parameters
-	D3Q19CSParameters parameters(FRenderTarget, URenderTarget, porousDataArray, LatticeDims);
+	D3Q19CSParameters parameters(FRenderTarget, URenderTarget, PosRenderTarget, porousDataArray, LatticeDims);
 	parameters.Iteration = iteration;
 	FD3Q19CSManager::Get()->UpdateParameters(parameters);
-	
-	auto probTex = FRenderTarget->GameThread_GetRenderTargetResource();
-	//probTex->
 
-	//if (FRenderTarget != NULL)
-	//{
-	//	TArray<FLinearColor> colorBuffer;
-	//	if (textureResource->ReadLinearColorPixels(colorBuffer))
-	//	{
-	//		int Nx = 400;
-	//		int x = 0;
-	//		int y = 0;
-	//		TArray<float> vels;
+	if (URenderTarget != NULL)
+	{
+		if (URenderTarget->GameThread_GetRenderTargetResource()->ReadLinearColorPixels(uBuffer))
+		{
+			int prob = 1;
+		}
+	}
 
-	//		for (x = 0; x < 6; x++)
-	//		{
-	//			for (int i = 0; i < 9; i++)
-	//			{
-	//				int id = x + y * 9 * Nx + i * Nx;
-	//				vels.Add(colorBuffer[id].R);
-	//			}
-	//		}
+	if (PosRenderTarget != NULL)
+	{
+		if (PosRenderTarget->GameThread_GetRenderTargetResource()->ReadLinearColorPixels(posBuffer))
+		{
+			int Nx = 400;
+			int x = 0;
+			int y = 0;
+			TArray<float> vels;
 
-	//		TArray<float> vels2;
+			for (x = 0; x < 6; x++)
+			{
+				for (int i = 0; i < 9; i++)
+				{
+					int id = x + y * 9 * Nx + i * Nx;
+					vels.Add(posBuffer[id].R);
+				}
+			}
 
-	//		for (x = 390; x < Nx; x++)
-	//		{
-	//			for (int i = 0; i < 9; i++)
-	//			{
-	//				int id = x + y * 9 * Nx + i * Nx;
-	//				vels2.Add(colorBuffer[id].R);
-	//			}
-	//		}
+			TArray<float> vels2;
 
-	//		int prob2 = 0;
-	//	}
-	//}
+			for (x = 390; x < Nx; x++)
+			{
+				for (int i = 0; i < 9; i++)
+				{
+					int id = x + y * 9 * Nx + i * Nx;
+					vels2.Add(posBuffer[id].R);
+				}
+			}
+
+			int prob2 = 0;
+		}
+	}
 		//// ->GetRenderTargetResource();
 		//TArray<FFloat16Color> ColorBuffer16;
 		//if (textureResource->ReadFloat16Pixels(ColorBuffer16))

@@ -39,7 +39,7 @@ void ALBMActor::BeginPlay()
 	MID->SetTextureParameterValue("InputTexture", (UTexture*)FRenderTarget);
 	//auto prob = (*RenderTarget).get;
 
-	textureResource = (FTextureRenderTarget2DResource*)FRenderTarget->Resource;
+	textureResource = (FTextureRenderTarget2DResource*)PosRenderTarget->Resource;
 }
 
 void ALBMActor::BeginDestroy()
@@ -53,23 +53,28 @@ void ALBMActor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	iteration++;
-	if (iteration > 1000)
+	if (iteration > 200)
 	{
 		iteration = 0;
 	}
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Iteration: %i"), iteration));
 
 	//Update parameters
-	D2Q9CSParameters parameters(FRenderTarget, URenderTarget, porousDataArray);
+	D2Q9CSParameters parameters(FRenderTarget, URenderTarget, PosRenderTarget, porousDataArray);
 	parameters.Iteration = iteration;
 	FD2Q9CSManager::Get()->UpdateParameters(parameters);
-	auto probTex = FRenderTarget->GameThread_GetRenderTargetResource();
-	//probTex->
 
-	if (FRenderTarget != NULL)
+	if (URenderTarget != NULL)
 	{
-		TArray<FLinearColor> colorBuffer;
-		if (textureResource->ReadLinearColorPixels(colorBuffer))
+		if (URenderTarget->GameThread_GetRenderTargetResource()->ReadLinearColorPixels(uBuffer))
+		{
+			int prob = 1;
+		}
+	}
+
+	if (PosRenderTarget != NULL)
+	{
+		if (PosRenderTarget->GameThread_GetRenderTargetResource()->ReadLinearColorPixels(posBuffer))
 		{
 			int Nx = 400;
 			int x = 0;
@@ -81,7 +86,7 @@ void ALBMActor::Tick(float DeltaTime)
 				for (int i = 0; i < 9; i++)
 				{
 					int id = x + y * 9 * Nx + i * Nx;
-					vels.Add(colorBuffer[id].R);
+					vels.Add(posBuffer[id].R);
 				}
 			}
 
@@ -92,7 +97,7 @@ void ALBMActor::Tick(float DeltaTime)
 				for (int i = 0; i < 9; i++)
 				{
 					int id = x + y * 9 * Nx + i * Nx;
-					vels2.Add(colorBuffer[id].R);
+					vels2.Add(posBuffer[id].R);
 				}
 			}
 

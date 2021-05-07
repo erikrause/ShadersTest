@@ -4,9 +4,6 @@
 
 float Rho0; // = 100; // average density
 int Iteration;
-int Nx;
-int Ny;
-int Nz;
 
 Texture2D<float> F_in;     // F with current t
 RWTexture2D<float> F_out;  // t + 1
@@ -26,13 +23,13 @@ void initArray(int x, int y, int z, int x_tex, int y_tex)
     //Fill init velocities:
     for (int i = 0; i < Q; i++)
     {
-        F_out[float2(x_tex, y_tex + i)] = 1;
+        F_out[int2(x_tex, y_tex + i)] = 1;
     }
     // TODO: F_out[x][y] += rand;   - (добавить флуктуации)
         
         
     // «адаем направление потока по направлению (1, 0, 0):
-    F_out[float2(x_tex, y_tex + 1)] += 20 * (1 + 0.2 * cos(2 * PI * x / Nx * 4));
+    F_out[int2(x_tex, y_tex + 1)] += 20 * (1 + 0.2 * cos(2 * PI * x / Nx * 4));
         
     
     
@@ -40,11 +37,11 @@ void initArray(int x, int y, int z, int x_tex, int y_tex)
     float rho = 0; // текуща€ локальна€ плотность.
     for (i = 0; i < Q; i++)
     {
-        rho += F_out[float2(x_tex, y_tex + i)];
+        rho += F_out[int2(x_tex, y_tex + i)];
     }
     for (i = 0; i < Q; i++)
     {
-        F_out[float2(x_tex, y_tex + i)] *= Rho0 / rho;
+        F_out[int2(x_tex, y_tex + i)] *= Rho0 / rho;
     }
         
         
@@ -53,7 +50,7 @@ void initArray(int x, int y, int z, int x_tex, int y_tex)
     {
         for (i = 0; i < Q; i++)
         {
-            F_out[float2(x_tex, y_tex + i)] = 0;
+            F_out[int2(x_tex, y_tex + i)] = 0;
         }
     }
 }
@@ -86,7 +83,7 @@ void Main(uint3 DTid : SV_DispatchThreadID)
     float f[Q];
     for (i = 0; i < Q; i++)
     {
-        f[i] = F_in[float2(x_tex, y_tex + i)];
+        f[i] = F_in[int2(x_tex, y_tex + i)];
     }
     
         
@@ -96,34 +93,19 @@ void Main(uint3 DTid : SV_DispatchThreadID)
     //uv.x = (x_tex - 0.5) / Nx;
     //uv.y = (y_tex + 3 + 0.5) / (Ny * 9);
     ////float prob = F_in.Sample(samplerState, uv);
-    //F_out[float2(x_tex, y_tex + 3)] = F_in.SampleLevel(F_SamplerState, uv, 0);
+    //F_out[int2(x_tex, y_tex + 3)] = F_in.SampleLevel(F_SamplerState, uv, 0);
     
     
     // Drift particles to neighbours (with indexing):
     for (int neighbour_id = 0; neighbour_id < Q; neighbour_id++)
-    {
-        int neighbour_x = x - cxs[neighbour_id];
-        int neighbour_y = y - cys[neighbour_id];
-        int neighbour_z = z - czs[neighbour_id];
+    {       
+        int3 neighbour = int3(int3(x, y, z) - int3(cxs[neighbour_id], cys[neighbour_id], czs[neighbour_id]));
+        neighbour = closeField(neighbour);
 
-        // замыкаем границы:
-        if ((neighbour_x == -1) || (neighbour_x == Nx))
-        {
-            neighbour_x = abs(abs(neighbour_x) - Nx);
-        }
-        if ((neighbour_y == -1) || (neighbour_y == Ny))
-        {
-            neighbour_y = abs(abs(neighbour_y) - Ny);
-        }
-        if ((neighbour_z == -1) || (neighbour_z == Nz))
-        {
-            neighbour_z = abs(abs(neighbour_z) - Nz);
-        }
-
-        int neighbour_y_out = neighbour_y * Q;
+        int neighbour_y_tex = neighbour.y * Q;
         
-        f[neighbour_id] = F_in[float2(neighbour_x + neighbour_z * Nx, neighbour_y_out + neighbour_id)];
-        //f[neighbour_id] = F_in[float2(neighbour_x, neighbour_y_out + neighbour_id)];  // was for 2D.
+        f[neighbour_id] = F_in[int2(neighbour.x + neighbour.z * Nx, neighbour_y_tex + neighbour_id)];
+        //f[neighbour_id] = F_in[int2(neighbour_x, neighbour_y_tex + neighbour_id)];  // was for 2D.
     }
     
     
@@ -145,7 +127,7 @@ void Main(uint3 DTid : SV_DispatchThreadID)
     {
         if (Iteration > 0)
         {
-            F_out[float2(x_tex, y_tex + i)] = f[i];
+            F_out[int2(x_tex, y_tex + i)] = f[i];
         }
     }
 

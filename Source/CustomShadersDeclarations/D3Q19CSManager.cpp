@@ -3,6 +3,7 @@ PRAGMA_DISABLE_OPTIMIZATION
 #include "D3Q19CSManager.h"
 #include "D3Q19CSDrift.h"
 #include "D3Q19CSCollision.h"
+#include "ParticlesCS.h"
 
 #include "RenderGraphUtils.h"
 #include "RenderTargetPool.h"
@@ -93,14 +94,22 @@ void FD3Q19CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList,
 		VorticityOutputDesc.DebugName = TEXT("UCS_Output_RenderTarget");
 		GRenderTargetPool.FindFreeElement(RHICmdList, VorticityOutputDesc, UPooledRenderTarget, TEXT("UCS_Output_RenderTarget"));
 	}
+	if (!PosPooledRenderTarget.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Position pool is not Valid"));
+		FPooledRenderTargetDesc PositionOutputDesc(FPooledRenderTargetDesc::Create2DDesc(FIntPoint(cachedParams.PosRenderTarget->SizeX, cachedParams.PosRenderTarget->SizeY), cachedParams.PosRenderTarget->GetRenderTargetResource()->TextureRHI->GetFormat(), FClearValueBinding::None, TexCreate_None, TexCreate_ShaderResource | TexCreate_UAV, false));
+		PositionOutputDesc.DebugName = TEXT("PosCS_Output_RenderTarget");
+		GRenderTargetPool.FindFreeElement(RHICmdList, PositionOutputDesc, PosPooledRenderTarget, TEXT("PosCS_Output_RenderTarget"));
+	}
 	//auto textureUAVRef = RHICreateUnorderedAccessView(cachedParams.RenderTarget->GetRenderTargetResource()->TextureRHI);
 
 	//Unbind the previously bound render targets
 	UnbindRenderTargets(RHICmdList);
 
 	//Specify the resource transition, we're executing this in post scene rendering so we set it to Graphics to Compute
-	RHICmdList.TransitionResource(EResourceTransitionAccess::ERWBarrier, EResourceTransitionPipeline::EGfxToCompute, FPooledRenderTarget->GetRenderTargetItem().UAV);
+	RHICmdList.TransitionResource(EResourceTransitionAccess::ERWBarrier, EResourceTransitionPipeline::EGfxToCompute, FPooledRenderTarget->GetRenderTargetItem().UAV);		// TODO: проверить работоспособность без этих строк.
 	RHICmdList.TransitionResource(EResourceTransitionAccess::ERWBarrier, EResourceTransitionPipeline::EGfxToCompute, UPooledRenderTarget->GetRenderTargetItem().UAV);
+	RHICmdList.TransitionResource(EResourceTransitionAccess::ERWBarrier, EResourceTransitionPipeline::EGfxToCompute, PosPooledRenderTarget->GetRenderTargetItem().UAV);
 
 	// CREATE THE SAMPLER STATE RHI RESOURCE.
 	//ESamplerAddressMode SamplerAddressMode = Owner->SamplerAddressMode;
@@ -153,28 +162,48 @@ void FD3Q19CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList,
 	CollisionCSParameters.PorousData = PorousStructSRV;
 	CollisionCSParameters.U = UPooledRenderTarget->GetRenderTargetItem().UAV;
 
+	FParticlesCS::FParameters ParticlesCSParameters;
+	ParticlesCSParameters.Iteration = cachedParams.Iteration;
+	ParticlesCSParameters.Nx = cachedParams.GetLatticeDims().X;
+	ParticlesCSParameters.Ny = cachedParams.GetLatticeDims().Y;
+	ParticlesCSParameters.Nz = cachedParams.GetLatticeDims().Z;
+	ParticlesCSParameters.Pos_in = cachedParams.PosRenderTarget->GetRenderTargetResource()->TextureRHI;
+	ParticlesCSParameters.Pos_out = PosPooledRenderTarget->GetRenderTargetItem().UAV;
+	ParticlesCSParameters.U = cachedParams.URenderTarget->GetRenderTargetResource()->TextureRHI;
+
 	//Get a reference to our shader type from global shader map
 	TShaderMapRef<FD3Q19CSDrift> D3Q19CSDrift(GetGlobalShaderMap(GMaxRHIFeatureLevel));
 	TShaderMapRef<FD3Q19CSCollision> D3Q19CSCollision(GetGlobalShaderMap(GMaxRHIFeatureLevel));
+	TShaderMapRef<FParticlesCS> Particles(GetGlobalShaderMap(GMaxRHIFeatureLevel));
 
 	clock_t start, end;
 
 	start = clock();
 
+	// DRIFT:
 	FComputeShaderUtils::Dispatch(RHICmdList, D3Q19CSDrift, DriftCSParameters,
-		FIntVector(FMath::DivideAndRoundUp(cachedParams.GetRenderTargetSize().X, NUM_THREADS_PER_GROUP_DIMENSION),
-			FMath::DivideAndRoundUp(cachedParams.GetRenderTargetSize().Y / 19, NUM_THREADS_PER_GROUP_DIMENSION), 1));
-
-	RHICmdList.CopyTexture(FPooledRenderTarget->GetRenderTargetItem().ShaderResourceTexture, cachedParams.FRenderTarget->GetRenderTargetResource()->TextureRHI, FRHICopyTextureInfo());
-
-	FComputeShaderUtils::Dispatch(RHICmdList, D3Q19CSCollision, CollisionCSParameters,
 		FIntVector(FMath::DivideAndRoundUp(cachedParams.GetRenderTargetSize().X, NUM_THREADS_PER_GROUP_DIMENSION),
 			FMath::DivideAndRoundUp(cachedParams.GetRenderTargetSize().Y / 19, NUM_THREADS_PER_GROUP_DIMENSION), 1));
 
 	//Copy shader's output to the render target provided by the client
 	RHICmdList.CopyTexture(FPooledRenderTarget->GetRenderTargetItem().ShaderResourceTexture, cachedParams.FRenderTarget->GetRenderTargetResource()->TextureRHI, FRHICopyTextureInfo());
+
+	// COLLISION:
+	FComputeShaderUtils::Dispatch(RHICmdList, D3Q19CSCollision, CollisionCSParameters,
+		FIntVector(FMath::DivideAndRoundUp(cachedParams.GetRenderTargetSize().X, NUM_THREADS_PER_GROUP_DIMENSION),
+			FMath::DivideAndRoundUp(cachedParams.GetRenderTargetSize().Y / 19, NUM_THREADS_PER_GROUP_DIMENSION), 1));
+
+
+	RHICmdList.CopyTexture(FPooledRenderTarget->GetRenderTargetItem().ShaderResourceTexture, cachedParams.FRenderTarget->GetRenderTargetResource()->TextureRHI, FRHICopyTextureInfo());
 	RHICmdList.CopyTexture(UPooledRenderTarget->GetRenderTargetItem().ShaderResourceTexture, cachedParams.URenderTarget->GetRenderTargetResource()->TextureRHI, FRHICopyTextureInfo());
 	//RHICmdList.SetComputeShader(D3Q19CSDrift.GetComputeShader());	// зачем?
+
+
+	// PARTICLES UPDATE:
+	FComputeShaderUtils::Dispatch(RHICmdList, Particles, ParticlesCSParameters,
+		FIntVector(FMath::DivideAndRoundUp(cachedParams.PosRenderTarget->SizeX, NUM_THREADS_PER_GROUP_DIMENSION * NUM_THREADS_PER_GROUP_DIMENSION), 1, 1));
+
+	RHICmdList.CopyTexture(PosPooledRenderTarget->GetRenderTargetItem().ShaderResourceTexture, cachedParams.PosRenderTarget->GetRenderTargetResource()->TextureRHI, FRHICopyTextureInfo());
 
 	end = clock();
 
@@ -183,3 +212,24 @@ void FD3Q19CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList,
 
 	int prob = 0;
 }
+
+
+// Create & fill texture. Source: https://www.reddit.com/r/unrealengine/comments/gxmmmr/pass_an_array_of_floatsfcolors_to_material/
+
+//UTexture2D* CreateTextureFrom32BitFloat(TArray<float> data, int width, int height) {
+//	UTexture2D* Texture;
+//	Texture = UTexture2D::CreateTransient(width, height, PF_R32_FLOAT);
+//	if (!Texture) return nullptr;
+//#if WITH_EDITORONLY_DATA
+//	Texture->MipGenSettings = TMGS_NoMipmaps;
+//#endif
+//	Texture->NeverStream = true;
+//	Texture->SRGB = 0;
+//	Texture->LODGroup = TextureGroup::TEXTUREGROUP_Pixels2D;
+//	FTexture2DMipMap& Mip = Texture->PlatformData->Mips[0];
+//	void* Data = Mip.BulkData.Lock(LOCK_READ_WRITE);
+//	FMemory::Memcpy(Data, data.GetData(), width * height * 4);
+//	Mip.BulkData.Unlock();
+//	Texture->UpdateResource();
+//	return Texture;
+//}

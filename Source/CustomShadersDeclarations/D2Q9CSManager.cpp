@@ -3,6 +3,7 @@ PRAGMA_DISABLE_OPTIMIZATION
 #include "D2Q9CSManager.h"
 #include "D2Q9CSDrift.h"
 #include "D2Q9CSCollision.h"
+#include "ParticlesCS2D.h"
 
 #include "RenderGraphUtils.h"
 #include "RenderTargetPool.h"
@@ -93,6 +94,13 @@ void FD2Q9CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList, 
 		VorticityOutputDesc.DebugName = TEXT("UCS_Output_RenderTarget");
 		GRenderTargetPool.FindFreeElement(RHICmdList, VorticityOutputDesc, UPooledRenderTarget, TEXT("UCS_Output_RenderTarget"));
 	}
+	if (!PosPooledRenderTarget.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Position pool is not Valid"));
+		FPooledRenderTargetDesc PositionOutputDesc(FPooledRenderTargetDesc::Create2DDesc(FIntPoint(cachedParams.PosRenderTarget->SizeX, cachedParams.PosRenderTarget->SizeY), cachedParams.PosRenderTarget->GetRenderTargetResource()->TextureRHI->GetFormat(), FClearValueBinding::None, TexCreate_None, TexCreate_ShaderResource | TexCreate_UAV, false));
+		PositionOutputDesc.DebugName = TEXT("PosCS_Output_RenderTarget");
+		GRenderTargetPool.FindFreeElement(RHICmdList, PositionOutputDesc, PosPooledRenderTarget, TEXT("PosCS_Output_RenderTarget"));
+	}
 	//auto textureUAVRef = RHICreateUnorderedAccessView(cachedParams.RenderTarget->GetRenderTargetResource()->TextureRHI);
 
 	//Unbind the previously bound render targets
@@ -101,6 +109,7 @@ void FD2Q9CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList, 
 	//Specify the resource transition, we're executing this in post scene rendering so we set it to Graphics to Compute
 	RHICmdList.TransitionResource(EResourceTransitionAccess::ERWBarrier, EResourceTransitionPipeline::EGfxToCompute, FPooledRenderTarget->GetRenderTargetItem().UAV);
 	RHICmdList.TransitionResource(EResourceTransitionAccess::ERWBarrier, EResourceTransitionPipeline::EGfxToCompute, UPooledRenderTarget->GetRenderTargetItem().UAV);
+	RHICmdList.TransitionResource(EResourceTransitionAccess::ERWBarrier, EResourceTransitionPipeline::EGfxToCompute, PosPooledRenderTarget->GetRenderTargetItem().UAV);
 
 	// CREATE THE SAMPLER STATE RHI RESOURCE.
 	//ESamplerAddressMode SamplerAddressMode = Owner->SamplerAddressMode;
@@ -152,9 +161,18 @@ void FD2Q9CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList, 
 	CollisionCSParameters.PorousData = PorousStructSRV;
 	CollisionCSParameters.Rho0 = 100;
 
+	FParticlesCS2D::FParameters ParticlesCSParameters;
+	ParticlesCSParameters.Iteration = cachedParams.Iteration;
+	ParticlesCSParameters.Nx = cachedParams.GetRenderTargetSize().X;
+	ParticlesCSParameters.Ny = cachedParams.GetRenderTargetSize().Y / 9;
+	ParticlesCSParameters.Pos_in = cachedParams.PosRenderTarget->GetRenderTargetResource()->TextureRHI;
+	ParticlesCSParameters.Pos_out = PosPooledRenderTarget->GetRenderTargetItem().UAV;
+	ParticlesCSParameters.U = cachedParams.URenderTarget->GetRenderTargetResource()->TextureRHI;
+
 	//Get a reference to our shader type from global shader map
 	TShaderMapRef<FD2Q9CSDrift> D2Q9CSDrift(GetGlobalShaderMap(GMaxRHIFeatureLevel));
 	TShaderMapRef<FD2Q9CSCollision> D2Q9CSCollision(GetGlobalShaderMap(GMaxRHIFeatureLevel));
+	TShaderMapRef<FParticlesCS2D> Particles(GetGlobalShaderMap(GMaxRHIFeatureLevel));
 
 	clock_t start, end;
 
@@ -174,6 +192,12 @@ void FD2Q9CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList, 
 	RHICmdList.CopyTexture(FPooledRenderTarget->GetRenderTargetItem().ShaderResourceTexture, cachedParams.FRenderTarget->GetRenderTargetResource()->TextureRHI, FRHICopyTextureInfo());
 	RHICmdList.CopyTexture(UPooledRenderTarget->GetRenderTargetItem().ShaderResourceTexture, cachedParams.URenderTarget->GetRenderTargetResource()->TextureRHI, FRHICopyTextureInfo());
 	//RHICmdList.SetComputeShader(D2Q9CS.GetComputeShader());	// зачем?
+	
+	// PARTICLES UPDATE:
+	FComputeShaderUtils::Dispatch(RHICmdList, Particles, ParticlesCSParameters,
+		FIntVector(FMath::DivideAndRoundUp(cachedParams.PosRenderTarget->SizeX, NUM_THREADS_PER_GROUP_DIMENSION* NUM_THREADS_PER_GROUP_DIMENSION), 1, 1));
+
+	RHICmdList.CopyTexture(PosPooledRenderTarget->GetRenderTargetItem().ShaderResourceTexture, cachedParams.PosRenderTarget->GetRenderTargetResource()->TextureRHI, FRHICopyTextureInfo());
 
 	end = clock();
 

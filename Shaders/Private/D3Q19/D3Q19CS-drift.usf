@@ -1,3 +1,5 @@
+#pragma enable_d3d11_debug_symbols
+
 #include "/Engine/Public/Platform.ush"
 
 #include "D3Q19CS-constants.usf"

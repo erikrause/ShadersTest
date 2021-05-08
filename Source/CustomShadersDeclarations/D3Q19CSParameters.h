@@ -16,6 +16,9 @@ struct D3Q19CSParameters
 	// Текстура для хранения позиций частиц.
 	UTextureRenderTarget2D* PosRenderTarget;
 
+	// Текстура для хранения пористой среды.
+	UTextureRenderTarget2D* PorousRenderTarget;
+
 	// Test.
 	int Iteration = 0;
 	int* PorousDataArray;
@@ -45,8 +48,8 @@ struct D3Q19CSParameters
 	}
 
 	D3Q19CSParameters() { }
-	D3Q19CSParameters(UTextureRenderTarget2D* IORenderTarget, UTextureRenderTarget2D* uRenderTarget, UTextureRenderTarget2D* posRenderTarget, int* porousDataArray, FIntVector latticeDims)
-		: FRenderTarget(IORenderTarget), URenderTarget(uRenderTarget), PosRenderTarget(posRenderTarget)
+	D3Q19CSParameters(UTextureRenderTarget2D* IORenderTarget, UTextureRenderTarget2D* uRenderTarget, UTextureRenderTarget2D* posRenderTarget, UTextureRenderTarget2D* porousRenderTarget, int* porousDataArray, FIntVector latticeDims)
+		: FRenderTarget(IORenderTarget), URenderTarget(uRenderTarget), PosRenderTarget(posRenderTarget), PorousRenderTarget(porousRenderTarget)
 	{
 		PorousDataArray = porousDataArray;
 		_cachedRenderTargetSize = FRenderTarget ? FIntPoint(FRenderTarget->SizeX, FRenderTarget->SizeY) : FIntPoint::ZeroValue;

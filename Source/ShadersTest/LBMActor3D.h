@@ -27,12 +27,14 @@ public:
 		class UTextureRenderTarget2D* PosRenderTarget;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shader)
+		class UTextureRenderTarget2D* PorousRenderTarget;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shader)
 		FIntVector LatticeDims = FIntVector(64, 64, 64);
 public:
 	// Sets default values for this pawn's properties
 	ALBMActor3D();
 
-	FTextureRenderTarget2DResource* textureResource;
 
 protected:
 	// Called when the game starts or when spawned

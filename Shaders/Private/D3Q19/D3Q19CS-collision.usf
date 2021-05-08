@@ -1,14 +1,17 @@
+#pragma enable_d3d11_debug_symbols
+
 #include "/Engine/Public/Platform.ush"
 
 #include "D3Q19CS-constants.usf"
 
-static float Tau = 1.6;
+static float Tau = 2.6;
 int Iteration;
 
 Texture2D<float> F_in;     // F with current t
 RWTexture2D<float> F_out;  // t + 1
 RWTexture2D<float3> U;  // TODO: try Testure3D.
 StructuredBuffer<int> PorousData;
+RWTexture2D<float> PorousTarget;
 
 bool isBoundary(int x, int y, int z)
 {
@@ -91,6 +94,9 @@ void Main(uint3 DTid : SV_DispatchThreadID)
     // U OUTPUT:
     U[int2(x_tex, y)] = u;
     
+    
+    // POROUS TEST:
+    PorousTarget[int2(x_tex, y)] = PorousData[x + y * Nx + z * Nx * Ny];
     
     // VORTICITY:
     //Vorticity = 

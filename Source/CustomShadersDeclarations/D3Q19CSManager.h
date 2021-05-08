@@ -68,6 +68,7 @@ private:
 	TRefCountPtr<IPooledRenderTarget> FPooledRenderTarget;
 	TRefCountPtr<IPooledRenderTarget> UPooledRenderTarget;
 	TRefCountPtr<IPooledRenderTarget> PosPooledRenderTarget;
+	TRefCountPtr<IPooledRenderTarget> PorousPooledRenderTarget;
 	//uint32 _iteration = 0;
 	//uint32 _maxIteration = 5000;
 public:

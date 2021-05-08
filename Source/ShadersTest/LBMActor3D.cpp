@@ -18,7 +18,7 @@ ALBMActor3D::ALBMActor3D()
 	static_mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Static Mesh"));
 	
 
-	Amaretto* amarettoTest = new Amaretto(FString("C:\\img, c0=22.5, c=23.4.amaretto"));
+	Amaretto* amarettoTest = new Amaretto(FString("C:\\white.amaretto"));
 	porousDataArray = amarettoTest->GetPorousDataArray();
 
 	int prob2 = 0;
@@ -38,8 +38,6 @@ void ALBMActor3D::BeginPlay()
 	UMaterialInstanceDynamic* MID = static_mesh->CreateAndSetMaterialInstanceDynamic(0);
 	MID->SetTextureParameterValue("InputTexture", (UTexture*)FRenderTarget);
 	//auto prob = (*RenderTarget).get;
-
-	textureResource = (FTextureRenderTarget2DResource*)PosRenderTarget->Resource;
 }
 
 void ALBMActor3D::BeginDestroy()
@@ -60,7 +58,7 @@ void ALBMActor3D::Tick(float DeltaTime)
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Iteration: %i"), iteration));
 
 	//Update parameters
-	D3Q19CSParameters parameters(FRenderTarget, URenderTarget, PosRenderTarget, porousDataArray, LatticeDims);
+	D3Q19CSParameters parameters(FRenderTarget, URenderTarget, PosRenderTarget, PorousRenderTarget, porousDataArray, LatticeDims);
 	parameters.Iteration = iteration;
 	FD3Q19CSManager::Get()->UpdateParameters(parameters);
 

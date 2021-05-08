@@ -101,6 +101,13 @@ void FD3Q19CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList,
 		PositionOutputDesc.DebugName = TEXT("PosCS_Output_RenderTarget");
 		GRenderTargetPool.FindFreeElement(RHICmdList, PositionOutputDesc, PosPooledRenderTarget, TEXT("PosCS_Output_RenderTarget"));
 	}
+	if (!PorousPooledRenderTarget.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Porous pool is not Valid"));
+		FPooledRenderTargetDesc PorousnOutputDesc(FPooledRenderTargetDesc::Create2DDesc(FIntPoint(cachedParams.PorousRenderTarget->SizeX, cachedParams.PorousRenderTarget->SizeY), cachedParams.PorousRenderTarget->GetRenderTargetResource()->TextureRHI->GetFormat(), FClearValueBinding::None, TexCreate_None, TexCreate_ShaderResource | TexCreate_UAV, false));
+		PorousnOutputDesc.DebugName = TEXT("PorousCS_Output_RenderTarget");
+		GRenderTargetPool.FindFreeElement(RHICmdList, PorousnOutputDesc, PorousPooledRenderTarget, TEXT("PorousCS_Output_RenderTarget"));
+	}
 	//auto textureUAVRef = RHICreateUnorderedAccessView(cachedParams.RenderTarget->GetRenderTargetResource()->TextureRHI);
 
 	//Unbind the previously bound render targets
@@ -110,6 +117,7 @@ void FD3Q19CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList,
 	RHICmdList.TransitionResource(EResourceTransitionAccess::ERWBarrier, EResourceTransitionPipeline::EGfxToCompute, FPooledRenderTarget->GetRenderTargetItem().UAV);		// TODO: проверить работоспособность без этих строк.
 	RHICmdList.TransitionResource(EResourceTransitionAccess::ERWBarrier, EResourceTransitionPipeline::EGfxToCompute, UPooledRenderTarget->GetRenderTargetItem().UAV);
 	RHICmdList.TransitionResource(EResourceTransitionAccess::ERWBarrier, EResourceTransitionPipeline::EGfxToCompute, PosPooledRenderTarget->GetRenderTargetItem().UAV);
+	RHICmdList.TransitionResource(EResourceTransitionAccess::ERWBarrier, EResourceTransitionPipeline::EGfxToCompute, PorousPooledRenderTarget->GetRenderTargetItem().UAV);
 
 	// CREATE THE SAMPLER STATE RHI RESOURCE.
 	//ESamplerAddressMode SamplerAddressMode = Owner->SamplerAddressMode;
@@ -144,7 +152,7 @@ void FD3Q19CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList,
 	DriftCSParameters.PorousData = PorousStructSRV;
 	DriftCSParameters.F_SamplerState = RHICreateSamplerState(SamplerStateInitializer);
 	DriftCSParameters.F_in = cachedParams.FRenderTarget->GetRenderTargetResource()->TextureRHI;
-	DriftCSParameters.F_out = FPooledRenderTarget->GetRenderTargetItem().UAV;
+	DriftCSParameters.F_out = FPooledRenderTarget->GetRenderTargetItem().UAV;	// TODO: for UAV try bind.
 	DriftCSParameters.Rho0 = 100;
 	DriftCSParameters.Iteration = cachedParams.Iteration;
 	//DriftCSParameters.Tau = 0.6;
@@ -160,6 +168,7 @@ void FD3Q19CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList,
 	CollisionCSParameters.Ny = cachedParams.GetLatticeDims().Y;
 	CollisionCSParameters.Nz = cachedParams.GetLatticeDims().Z;
 	CollisionCSParameters.PorousData = PorousStructSRV;
+	CollisionCSParameters.PorousTarget = PorousPooledRenderTarget->GetRenderTargetItem().UAV;
 	CollisionCSParameters.U = UPooledRenderTarget->GetRenderTargetItem().UAV;
 
 	FParticlesCS::FParameters ParticlesCSParameters;
@@ -196,6 +205,7 @@ void FD3Q19CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList,
 
 	RHICmdList.CopyTexture(FPooledRenderTarget->GetRenderTargetItem().ShaderResourceTexture, cachedParams.FRenderTarget->GetRenderTargetResource()->TextureRHI, FRHICopyTextureInfo());
 	RHICmdList.CopyTexture(UPooledRenderTarget->GetRenderTargetItem().ShaderResourceTexture, cachedParams.URenderTarget->GetRenderTargetResource()->TextureRHI, FRHICopyTextureInfo());
+	RHICmdList.CopyTexture(PorousPooledRenderTarget->GetRenderTargetItem().ShaderResourceTexture, cachedParams.PorousRenderTarget->GetRenderTargetResource()->TextureRHI, FRHICopyTextureInfo());
 	//RHICmdList.SetComputeShader(D3Q19CSDrift.GetComputeShader());	// зачем?
 
 

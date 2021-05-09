@@ -15,7 +15,7 @@ public:
 		USceneComponent* Root;
 
 	UPROPERTY(EditAnywhere)
-		UStaticMeshComponent* static_mesh;
+		UStaticMeshComponent* static_mesh;	// Временно, для визуализации по срезам.
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shader)
 		class UTextureRenderTarget2D* FRenderTarget;
@@ -31,6 +31,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shader)
 		FIntVector LatticeDims = FIntVector(64, 64, 64);
+
+	//UPROPERTY(BlueprintReadWrite, Category = Porous)
+		UInstancedStaticMeshComponent* PorousBoundariesMeshes;
 public:
 	// Sets default values for this pawn's properties
 	ALBMActor3D();

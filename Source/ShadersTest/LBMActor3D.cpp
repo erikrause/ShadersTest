@@ -16,12 +16,37 @@ ALBMActor3D::ALBMActor3D()
 	RootComponent = Root;
 
 	static_mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Static Mesh"));
+
+
+	Amaretto* amaretto = new Amaretto(FString("C:\\img, c0=22.5, c=23.4.amaretto"));
+	porousDataArray = amaretto->GetPorousDataArray();
+
+	PorousBoundariesMeshes = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("Porous boundaries"));
+	PorousBoundariesMeshes->AttachToComponent(Root, FAttachmentTransformRules::KeepRelativeTransform);
+	static ConstructorHelpers::FObjectFinder<UMaterial> porousBoundariesMaterialAsset(TEXT("Material'/Game/D3Q19/visualization/Porous/PorousMaterial.PorousMaterial'"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> porousBoundariesMeshAsset(TEXT("Material'/Game/D3Q19/visualization/Porous/Cube_1x1x1.Cube_1x1x1'"));
+	PorousBoundariesMeshes->SetStaticMesh(porousBoundariesMeshAsset.Object);
+	PorousBoundariesMeshes->SetMaterial(0, porousBoundariesMaterialAsset.Object);
+
+	TArray<FIntVector> boundariesCoords = amaretto->GetBoundariesCoordinates();
+	for (FIntVector coord : boundariesCoords)
+	{
+		PorousBoundariesMeshes->AddInstance(FTransform(FRotator(), (FVector)coord));
+	}
+	//// Оптимизации:		// TODO: test perfomance
+	//PorousBoundariesMeshes->SetCollisionProfileName(FName("NoCollision"), false);
+	//PorousBoundariesMeshes->SetCastShadow(false);
+	//PorousBoundariesMeshes->SetLightAttachmentsAsGroup(true);
+	//PorousBoundariesMeshes->SetRenderCustomDepth(true);
+
 	
+	//PorousBoundariesMeshes->NumCustomDataFloats = 1;	// в PerInstanceCustomData[0] хранится индекс инстанса для чтения в шейдере материала.
+	//int voxelNum = amaretto->DimX + amaretto->DimY + amaretto->DimZ;
+	//for (int i = 0; i < 4; i++)
+	//{
 
-	Amaretto* amarettoTest = new Amaretto(FString("C:\\white.amaretto"));
-	porousDataArray = amarettoTest->GetPorousDataArray();
-
-	int prob2 = 0;
+	//	PorousBoundariesMeshes->SetCustomDataValue(i, 0, i);
+	//}
 }
 
 // Called when the game starts or when spawned

@@ -20,6 +20,7 @@ public:
 	/// </summary>
 	BEGIN_SHADER_PARAMETER_STRUCT(FParameters, )
 		SHADER_PARAMETER_SRV(FRWBufferStructured, PorousData)
+		SHADER_PARAMETER_UAV(RWTexture2D<float>, PorousTarget)
 		//SHADER_PARAMETER_UAV(FRWBuffer<int>, PorousData)
 		//SHADER_PARAMETER_STRUCT(int32, PorousData)
 		//SHADER_PARAMETER_ARRAY(int, PorousData, [2048])
@@ -55,4 +56,4 @@ public:
 
 // This will tell the engine to create the shader and where the shader entry point is.
 //                        ShaderType              ShaderPath             Shader function name    Type
-IMPLEMENT_GLOBAL_SHADER(FD3Q19CSCollision, "/CustomShaders/D3Q19CS-collision.usf", "Main", SF_Compute);
+IMPLEMENT_GLOBAL_SHADER(FD3Q19CSCollision, "/CustomShaders/D3Q19/D3Q19CS-collision.usf", "Main", SF_Compute);

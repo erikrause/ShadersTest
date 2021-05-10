@@ -22,6 +22,8 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shader)
 		class UTextureRenderTarget2D* URenderTarget;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shader)
+		UTextureRenderTarget2D* PosRenderTarget;
 public:
 	// Sets default values for this pawn's properties
 	ALBMActor();
@@ -37,6 +39,10 @@ protected:
 	//Amaretto* _amarettoTest;
 	int* porousDataArray;
 	int iteration = -1;
+
+	// for test:
+	TArray<FLinearColor> uBuffer;
+	TArray<FLinearColor> posBuffer;
 
 public:	
 	// Called every frame

@@ -67,8 +67,10 @@ private:
 	//Reference to a pooled render target where the shader will write its output
 	TRefCountPtr<IPooledRenderTarget> FPooledRenderTarget;
 	TRefCountPtr<IPooledRenderTarget> UPooledRenderTarget;
-	uint32 _iteration = 0;
-	uint32 _maxIteration = 5000;
+	TRefCountPtr<IPooledRenderTarget> PosPooledRenderTarget;
+	TRefCountPtr<IPooledRenderTarget> PorousPooledRenderTarget;
+	//uint32 _iteration = 0;
+	//uint32 _maxIteration = 5000;
 public:
 	void Execute_RenderThread(FRHICommandListImmediate& RHICmdList, class FSceneRenderTargets& SceneContext);
 };

@@ -13,6 +13,9 @@ struct D2Q9CSParameters
 	// “екстура дл€ хранени€ скоростей в узлах.
 	UTextureRenderTarget2D* URenderTarget;
 
+	// “екстура дл€ хранени€ позиций частиц.
+	UTextureRenderTarget2D* PosRenderTarget;
+
 	// Test.
 	int Iteration = 0;
 	int* PorousDataArray;
@@ -37,8 +40,8 @@ struct D2Q9CSParameters
 	}
 
 	D2Q9CSParameters() { }
-	D2Q9CSParameters(UTextureRenderTarget2D* IORenderTarget, UTextureRenderTarget2D* uRenderTarget, int* porousDataArray)
-		: FRenderTarget(IORenderTarget), URenderTarget(uRenderTarget)
+	D2Q9CSParameters(UTextureRenderTarget2D* IORenderTarget, UTextureRenderTarget2D* uRenderTarget, UTextureRenderTarget2D* posRenderTarget, int* porousDataArray)
+		: FRenderTarget(IORenderTarget), URenderTarget(uRenderTarget), PosRenderTarget(posRenderTarget)
 	{
 		PorousDataArray = porousDataArray;
 		CachedRenderTargetSize = FRenderTarget ? FIntPoint(FRenderTarget->SizeX, FRenderTarget->SizeY) : FIntPoint::ZeroValue;

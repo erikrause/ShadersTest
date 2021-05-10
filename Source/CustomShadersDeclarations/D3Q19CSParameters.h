@@ -13,6 +13,12 @@ struct D3Q19CSParameters
 	// “екстура дл€ хранени€ скоростей в узлах.
 	UTextureRenderTarget2D* URenderTarget;
 
+	// “екстура дл€ хранени€ позиций частиц.
+	UTextureRenderTarget2D* PosRenderTarget;
+
+	// “екстура дл€ хранени€ пористой среды.
+	UTextureRenderTarget2D* PorousRenderTarget;
+
 	// Test.
 	int Iteration = 0;
 	int* PorousDataArray;
@@ -42,8 +48,8 @@ struct D3Q19CSParameters
 	}
 
 	D3Q19CSParameters() { }
-	D3Q19CSParameters(UTextureRenderTarget2D* IORenderTarget, UTextureRenderTarget2D* uRenderTarget, int* porousDataArray, FIntVector latticeDims)
-		: FRenderTarget(IORenderTarget), URenderTarget(uRenderTarget)
+	D3Q19CSParameters(UTextureRenderTarget2D* IORenderTarget, UTextureRenderTarget2D* uRenderTarget, UTextureRenderTarget2D* posRenderTarget, UTextureRenderTarget2D* porousRenderTarget, int* porousDataArray, FIntVector latticeDims)
+		: FRenderTarget(IORenderTarget), URenderTarget(uRenderTarget), PosRenderTarget(posRenderTarget), PorousRenderTarget(porousRenderTarget)
 	{
 		PorousDataArray = porousDataArray;
 		_cachedRenderTargetSize = FRenderTarget ? FIntPoint(FRenderTarget->SizeX, FRenderTarget->SizeY) : FIntPoint::ZeroValue;

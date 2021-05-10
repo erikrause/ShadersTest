@@ -18,7 +18,7 @@ ALBMActor3D::ALBMActor3D()
 	static_mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Static Mesh"));
 
 
-	Amaretto* amaretto = new Amaretto(FString("C:\\img, c0=22.5, c=23.4.amaretto"));
+	Amaretto* amaretto = new Amaretto(FString("C:\\img, c0=22.5, c=23.4.amaretto")); //XYZtest.amaretto"));
 	porousDataArray = amaretto->GetPorousDataArray();
 
 	PorousBoundariesMeshes = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("Porous boundaries"));
@@ -62,7 +62,6 @@ void ALBMActor3D::BeginPlay()
 	//Assuming that the static mesh is already using the material that we're targeting, we create an instance and assign it to it
 	UMaterialInstanceDynamic* MID = static_mesh->CreateAndSetMaterialInstanceDynamic(0);
 	MID->SetTextureParameterValue("InputTexture", (UTexture*)FRenderTarget);
-	//auto prob = (*RenderTarget).get;
 }
 
 void ALBMActor3D::BeginDestroy()

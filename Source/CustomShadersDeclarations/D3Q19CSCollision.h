@@ -20,7 +20,7 @@ public:
 	/// </summary>
 	BEGIN_SHADER_PARAMETER_STRUCT(FParameters, )
 		SHADER_PARAMETER_SRV(FRWBufferStructured, PorousData)
-		SHADER_PARAMETER_UAV(RWTexture2D<float>, PorousTarget)
+		//SHADER_PARAMETER_UAV(RWTexture2D<float>, PorousTarget)
 		//SHADER_PARAMETER_UAV(FRWBuffer<int>, PorousData)
 		//SHADER_PARAMETER_STRUCT(int32, PorousData)
 		//SHADER_PARAMETER_ARRAY(int, PorousData, [2048])

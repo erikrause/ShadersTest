@@ -10,9 +10,7 @@ public:
 	Amaretto(FString path);
 	//static  ReadFile(string path);
 
-	uint16 DimX;
-	uint16 DimY;
-	uint16 DimZ;
+	FIntVector Dims;
 
 	/// <summary>
 	/// Получить массив пористой среды.

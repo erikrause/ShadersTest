@@ -24,12 +24,6 @@ public:
 		class UTextureRenderTarget2D* URenderTarget;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shader)
-		class UTextureRenderTarget2D* PosRenderTarget;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shader)
-		class UTextureRenderTarget2D* PorousRenderTarget;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shader)
 		FIntVector LatticeDims = FIntVector(64, 64, 64);
 
 	//UPROPERTY(BlueprintReadWrite, Category = Porous)
@@ -40,6 +34,9 @@ public:
 
 
 protected:
+
+	class Amaretto* _amaretto;
+
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 

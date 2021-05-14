@@ -7,9 +7,9 @@ Amaretto::Amaretto(FString path)
 	TArray<uint8> byteArray;
 	FFileHelper::LoadFileToArray(byteArray, *path);
 
-	DimX = (byteArray[1] << 8) | (byteArray[0]);
-	DimY = (byteArray[3] << 8) | (byteArray[2]);
-	DimZ = DimY;
+	Dims.X = (byteArray[1] << 8) | (byteArray[0]);
+	Dims.Y = (byteArray[3] << 8) | (byteArray[2]);
+	Dims.Z = (byteArray.Num() - 4) / (2 * Dims.X * Dims.Y);
 
 	for (int i = 4; i < byteArray.Num(); i = i + 2)
 	{
@@ -44,16 +44,16 @@ int* Amaretto::GetPorousDataArray()
 
 int Amaretto::GetPorousData(uint16 x, uint16 y, uint16 z)
 {
-	return porousDataRaw[x + y * DimX + z * DimX * DimY];
+	return porousDataRaw[x + y * Dims.X + z * Dims.X * Dims.Y];
 }
 
 TArray<FIntVector> Amaretto::GetBoundariesCoordinates(int16 valueInsideBoundaries)
 {
 	TArray<FIntVector> BoundariesCoords;
 
-	for (uint16 x = 0; x < DimX; x++)
-		for (uint16 y = 0; y < DimY; y++)
-			for (uint16 z = 0; z < DimZ; z++)
+	for (uint16 x = 0; x < Dims.X; x++)
+		for (uint16 y = 0; y < Dims.Y; y++)
+			for (uint16 z = 0; z < Dims.Z; z++)
 			{
 				if (GetPorousData(x, y, z) == valueInsideBoundaries)
 				{
@@ -64,7 +64,7 @@ TArray<FIntVector> Amaretto::GetBoundariesCoordinates(int16 valueInsideBoundarie
 					{
 						FIntVector neighbour_coord = FIntVector(x, y, z) + neigbour_dirs[i];
 						if (neighbour_coord.X == -1 || neighbour_coord.Y == -1 || neighbour_coord.Z == -1 ||
-							neighbour_coord.X == DimX || neighbour_coord.Y == DimY || neighbour_coord.Z == DimZ)
+							neighbour_coord.X == Dims.X || neighbour_coord.Y == Dims.Y || neighbour_coord.Z == Dims.Z)
 						{
 							BoundariesCoords.Add(FIntVector(x, y, z));
 							i = neigbor_count; // end for loop.

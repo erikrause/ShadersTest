@@ -11,7 +11,7 @@ Texture2D<float> F_in;     // F with current t
 RWTexture2D<float> F_out;  // t + 1
 RWTexture2D<float3> U;  // TODO: try Testure3D.
 StructuredBuffer<int> PorousData;
-RWTexture2D<float> PorousTarget;
+//RWTexture2D<float> PorousTarget;
 
 bool isBoundary(int x, int y, int z)
 {
@@ -97,32 +97,31 @@ void Main(uint3 DTid : SV_DispatchThreadID)
     U[int2(x_tex_u, y_tex_u)] = u;
     
 
-    // POROUS BOIUNDARIES OUT: - TODO: сделать через дискретное преобразование Лапласа.
-    if (Iteration == 1 && isBoundary(x, y, z))
-    {
-        PorousTarget[int2(x_tex_u, y_tex_u)] = 0;
-        const int neigbor_count = 6;
-        const int3 neigbour_dirs[neigbor_count] = { int3(-1, 0, 0), int3(0, -1, 0), int3(0, 0, -1), int3(1, 0, 0), int3(0, 1, 0), int3(0, 0, 1) };
-        for (i = 0; i < neigbor_count; i++)
-        {
-            int3 neighbour_coord = int3(x, y, z) + neigbour_dirs[i];
-            if (neighbour_coord.x == -1 || neighbour_coord.y == -1 || neighbour_coord.z == -1 ||
-                neighbour_coord.x == Nx || neighbour_coord.y == Ny || neighbour_coord.z == Nz)
-            {
-                PorousTarget[int2(x_tex_u, y_tex_u)] = 1;
-                i = neigbor_count; // end for loop.
-            }
-            else if (!isBoundary(neighbour_coord.x, neighbour_coord.y, neighbour_coord.z))
-            {
-                PorousTarget[int2(x_tex_u, y_tex_u)] = 1;
-                i = neigbor_count; // end for loop.
-            }
+    //// POROUS BOIUNDARIES OUT: - TODO: сделать через дискретное преобразование Лапласа.
+    //if (Iteration == 1 && isBoundary(x, y, z))
+    //{
+    //    PorousTarget[int2(x_tex_u, y_tex_u)] = 0;
+    //    const int neigbor_count = 6;
+    //    const int3 neigbour_dirs[neigbor_count] = { int3(-1, 0, 0), int3(0, -1, 0), int3(0, 0, -1), int3(1, 0, 0), int3(0, 1, 0), int3(0, 0, 1) };
+    //    for (i = 0; i < neigbor_count; i++)
+    //    {
+    //        int3 neighbour_coord = int3(x, y, z) + neigbour_dirs[i];
+    //        if (neighbour_coord.x == -1 || neighbour_coord.y == -1 || neighbour_coord.z == -1 ||
+    //            neighbour_coord.x == Nx || neighbour_coord.y == Ny || neighbour_coord.z == Nz)
+    //        {
+    //            PorousTarget[int2(x_tex_u, y_tex_u)] = 1;
+    //            i = neigbor_count; // end for loop.
+    //        }
+    //        else if (!isBoundary(neighbour_coord.x, neighbour_coord.y, neighbour_coord.z))
+    //        {
+    //            PorousTarget[int2(x_tex_u, y_tex_u)] = 1;
+    //            i = neigbor_count; // end for loop.
+    //        }
 
-        }
+    //    }
 
-    }
+    //}
     
-    //PorousTarget[int2(x_tex_u, y_tex_u)] = PorousData[x + y * Nx + z * Nx * Ny];
     
     // VORTICITY:
     //Vorticity = 

@@ -17,9 +17,9 @@ ALBMActor3D::ALBMActor3D()
 
 	static_mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Static Mesh"));
 
-
-	Amaretto* amaretto = new Amaretto(FString("C:\\img, c0=22.5, c=23.4.amaretto")); //XYZtest.amaretto"));
-	porousDataArray = amaretto->GetPorousDataArray();
+	FString projectDir = FPaths::ProjectDir();
+	_amaretto = new Amaretto(projectDir + FString("/Porous/img, c0=22.5, c=23.4.amaretto")); //XYZtest.amaretto"));
+	porousDataArray = _amaretto->GetPorousDataArray();
 
 	PorousBoundariesMeshes = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("Porous boundaries"));
 	PorousBoundariesMeshes->AttachToComponent(Root, FAttachmentTransformRules::KeepRelativeTransform);
@@ -28,7 +28,7 @@ ALBMActor3D::ALBMActor3D()
 	PorousBoundariesMeshes->SetStaticMesh(porousBoundariesMeshAsset.Object);
 	PorousBoundariesMeshes->SetMaterial(0, porousBoundariesMaterialAsset.Object);
 
-	TArray<FIntVector> boundariesCoords = amaretto->GetBoundariesCoordinates();
+	TArray<FIntVector> boundariesCoords = _amaretto->GetBoundariesCoordinates();
 	for (FIntVector coord : boundariesCoords)
 	{
 		PorousBoundariesMeshes->AddInstance(FTransform(FRotator(), (FVector)coord));
@@ -82,50 +82,50 @@ void ALBMActor3D::Tick(float DeltaTime)
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Iteration: %i"), iteration));
 
 	//Update parameters
-	D3Q19CSParameters parameters(FRenderTarget, URenderTarget, PosRenderTarget, PorousRenderTarget, porousDataArray, LatticeDims);
+	D3Q19CSParameters parameters(FRenderTarget, URenderTarget, porousDataArray, _amaretto->Dims);
 	parameters.Iteration = iteration;
 	FD3Q19CSManager::Get()->UpdateParameters(parameters);
 
-	if (URenderTarget != NULL)
-	{
-		if (URenderTarget->GameThread_GetRenderTargetResource()->ReadLinearColorPixels(uBuffer))
-		{
-			int prob = 1;
-		}
-	}
+	//if (URenderTarget != NULL)
+	//{
+	//	if (URenderTarget->GameThread_GetRenderTargetResource()->ReadLinearColorPixels(uBuffer))
+	//	{
+	//		int prob = 1;
+	//	}
+	//}
 
-	if (PosRenderTarget != NULL)
-	{
-		if (PosRenderTarget->GameThread_GetRenderTargetResource()->ReadLinearColorPixels(posBuffer))
-		{
-			int Nx = 400;
-			int x = 0;
-			int y = 0;
-			TArray<float> vels;
+	//if (PosRenderTarget != NULL)
+	//{
+	//	if (PosRenderTarget->GameThread_GetRenderTargetResource()->ReadLinearColorPixels(posBuffer))
+	//	{
+	//		int Nx = 400;
+	//		int x = 0;
+	//		int y = 0;
+	//		TArray<float> vels;
 
-			for (x = 0; x < 6; x++)
-			{
-				for (int i = 0; i < 9; i++)
-				{
-					int id = x + y * 9 * Nx + i * Nx;
-					vels.Add(posBuffer[id].R);
-				}
-			}
+	//		for (x = 0; x < 6; x++)
+	//		{
+	//			for (int i = 0; i < 9; i++)
+	//			{
+	//				int id = x + y * 9 * Nx + i * Nx;
+	//				vels.Add(posBuffer[id].R);
+	//			}
+	//		}
 
-			TArray<float> vels2;
+	//		TArray<float> vels2;
 
-			for (x = 390; x < Nx; x++)
-			{
-				for (int i = 0; i < 9; i++)
-				{
-					int id = x + y * 9 * Nx + i * Nx;
-					vels2.Add(posBuffer[id].R);
-				}
-			}
+	//		for (x = 390; x < Nx; x++)
+	//		{
+	//			for (int i = 0; i < 9; i++)
+	//			{
+	//				int id = x + y * 9 * Nx + i * Nx;
+	//				vels2.Add(posBuffer[id].R);
+	//			}
+	//		}
 
-			int prob2 = 0;
-		}
-	}
+	//		int prob2 = 0;
+	//	}
+	//}
 		//// ->GetRenderTargetResource();
 		//TArray<FFloat16Color> ColorBuffer16;
 		//if (textureResource->ReadFloat16Pixels(ColorBuffer16))

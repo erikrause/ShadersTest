@@ -65,8 +65,10 @@ private:
 	volatile bool bCachedParamsAreValid;
 
 	//Reference to a pooled render target where the shader will write its output
+	FTexture2DRHIRef FTexture;
 	TRefCountPtr<IPooledRenderTarget> FPooledRenderTarget;
 	TRefCountPtr<IPooledRenderTarget> UPooledRenderTarget;
+	FShaderResourceViewRHIRef PorousStructSRV;
 
 	//uint32 _iteration = 0;
 	//uint32 _maxIteration = 5000;

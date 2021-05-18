@@ -17,8 +17,8 @@ public:
 	UPROPERTY(EditAnywhere)
 		UStaticMeshComponent* static_mesh;	// Временно, для визуализации по срезам.
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shader)
-		class UTextureRenderTarget2D* FRenderTarget;
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shader)
+	//	class UTextureRenderTarget2D* FRenderTarget;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shader)
 		class UTextureRenderTarget2D* URenderTarget;

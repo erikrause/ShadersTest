@@ -58,10 +58,6 @@ void ALBMActor3D::BeginPlay()
 	// TODO: try to use ENQUEUE_RENDER_COMMAND: https://coderoad.ru/59638346/%D0%9A%D0%B0%D0%BA-%D0%B2%D1%8B-%D0%B4%D0%B8%D0%BD%D0%B0%D0%BC%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8-%D0%BE%D0%B1%D0%BD%D0%BE%D0%B2%D0%BB%D1%8F%D0%B5%D1%82%D0%B5-UTextureRenderTarget2D-%D0%B2-C
 	// ÈËÈ: try to get RHICmdList like here: https://github.com/runedegroot/UE4MarchingCubesGPU/blob/master/Plugins/MarchingCubesComputeShader/Source/MarchingCubesComputeShader/Private/MarchingCubesComputeHelper.cpp
 	//RenderTarget = UKismetRenderingLibrary::CreateRenderTarget2D(this, 11000, 512);	// try InitCustomFormat().
-
-	//Assuming that the static mesh is already using the material that we're targeting, we create an instance and assign it to it
-	UMaterialInstanceDynamic* MID = static_mesh->CreateAndSetMaterialInstanceDynamic(0);
-	MID->SetTextureParameterValue("InputTexture", (UTexture*)FRenderTarget);
 }
 
 void ALBMActor3D::BeginDestroy()
@@ -82,7 +78,7 @@ void ALBMActor3D::Tick(float DeltaTime)
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Iteration: %i"), iteration));
 
 	//Update parameters
-	D3Q19CSParameters parameters(FRenderTarget, URenderTarget, porousDataArray, _amaretto->Dims);
+	D3Q19CSParameters parameters(URenderTarget, porousDataArray, _amaretto->Dims);
 	parameters.Iteration = iteration;
 	FD3Q19CSManager::Get()->UpdateParameters(parameters);
 

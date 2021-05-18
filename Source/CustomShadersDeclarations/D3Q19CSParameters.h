@@ -7,8 +7,8 @@
 //This struct act as a container for all the parameters that the client needs to pass to the Compute Shader Manager.
 struct D3Q19CSParameters
 {
-	// “екстура дл€ хранени€ распределени€ частиц в узлах.
-	UTextureRenderTarget2D* FRenderTarget;
+	//// “екстура дл€ хранени€ распределени€ частиц в узлах.
+	//UTextureRenderTarget2D* FRenderTarget;
 
 	// “екстура дл€ хранени€ скоростей в узлах.
 	UTextureRenderTarget2D* URenderTarget;
@@ -17,24 +17,24 @@ struct D3Q19CSParameters
 	int Iteration = 0;
 	int* PorousDataArray;
 
-	/// <summary>
-	/// ¬ернуть разрешение текстуры.
-	/// </summary>
-	/// <param name="isOnlyXYDims"> ¬ернуть XYZ - разрешение сетки узлов. </param>
-	/// <returns></returns>
-	FIntPoint GetRenderTargetSize(bool isOnlyXYDims = false) const
-	{
-		if (isOnlyXYDims)
-		{
-			FIntPoint XY = _cachedRenderTargetSize;
-			XY.Y /= 19;
-			return XY;
-		}
-		else
-			return _cachedRenderTargetSize;
-		{
-		}
-	}
+	///// <summary>
+	///// ¬ернуть разрешение текстуры.
+	///// </summary>
+	///// <param name="isOnlyXYDims"> ¬ернуть XYZ - разрешение сетки узлов. </param>
+	///// <returns></returns>
+	//FIntPoint GetRenderTargetSize(bool isOnlyXYDims = false) const
+	//{
+	//	if (isOnlyXYDims)
+	//	{
+	//		FIntPoint XY = _cachedRenderTargetSize;
+	//		XY.Y /= 19;
+	//		return XY;
+	//	}
+	//	else
+	//		return _cachedRenderTargetSize;
+	//	{
+	//	}
+	//}
 
 	FIntVector GetLatticeDims() const
 	{
@@ -42,16 +42,16 @@ struct D3Q19CSParameters
 	}
 
 	D3Q19CSParameters() { }
-	D3Q19CSParameters(UTextureRenderTarget2D* IORenderTarget, UTextureRenderTarget2D* uRenderTarget, int* porousDataArray, FIntVector latticeDims)
-		: FRenderTarget(IORenderTarget), URenderTarget(uRenderTarget)
+	D3Q19CSParameters(UTextureRenderTarget2D* uRenderTarget, int* porousDataArray, FIntVector latticeDims)
+		: URenderTarget(uRenderTarget)
 	{
 		PorousDataArray = porousDataArray;
-		_cachedRenderTargetSize = FRenderTarget ? FIntPoint(FRenderTarget->SizeX, FRenderTarget->SizeY) : FIntPoint::ZeroValue;
+		//_cachedRenderTargetSize = URenderTarget ? FIntPoint(URenderTarget->SizeX, URenderTarget->SizeY) : FIntPoint::ZeroValue;
 		_latticeDims = latticeDims;
 
 	}
 
 private:
-	FIntPoint _cachedRenderTargetSize;
+	//FIntPoint _cachedRenderTargetSize;
 	FIntVector _latticeDims;
 };

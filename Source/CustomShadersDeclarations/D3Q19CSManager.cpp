@@ -11,7 +11,7 @@ PRAGMA_DISABLE_OPTIMIZATION
 
 #include "Modules/ModuleManager.h"
 
-
+#define Q 19
 
 //Static members
 FD3Q19CSManager* FD3Q19CSManager::instance = nullptr;
@@ -71,30 +71,59 @@ void FD3Q19CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList,
 {
 	//If there's no cached parameters to use, skip
 	//If no Render Target is supplied in the cachedParams, skip
-	if (!(bCachedParamsAreValid && cachedParams.FRenderTarget))
+	if (!(bCachedParamsAreValid && cachedParams.URenderTarget))
 	{
 		return;
 	}
 
 	//Render Thread Assertion
 	check(IsInRenderingThread());
+	FIntVector latticeDims = cachedParams.GetLatticeDims();
 
 	//If the render target is not valid, get an element from the render target pool by supplying a Descriptor
 	if (!FPooledRenderTarget.IsValid())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("F pool is not Valid"));
-		FPooledRenderTargetDesc FOutputDesc(FPooledRenderTargetDesc::Create2DDesc(cachedParams.GetRenderTargetSize(), cachedParams.FRenderTarget->GetRenderTargetResource()->TextureRHI->GetFormat(), FClearValueBinding::None, TexCreate_None, TexCreate_ShaderResource | TexCreate_UAV, false));
+		//https://answers.unrealengine.com/questions/805711/write-texture2drhi-or-uav-to-render-target.html
+		FRHIResourceCreateInfo resourceCreateInfo;
+		FTexture = RHICreateTexture2D(latticeDims.X * latticeDims.Z, latticeDims.Z * Q, PF_R32_FLOAT, 1, 1, TexCreate_None, resourceCreateInfo);
+		//auto fTextureSRV = RHICreateShaderResourceView(FTexture, FRHITextureSRVCreateInfo());
+
+		//FRenderTarget = UKismetRenderingLibrary::CreateRenderTarget2D(this, 11000, 512);
+		//FTexture2DRHIRef = RHIAsyncCreateTexture2D
+		//FTextureRenderTarget2DResource tex = TextureResource
+		UE_LOG(LogTemp, Warning, TEXT("F pool is not Valid"));	// TODO: pixel format to R32.
+		FPooledRenderTargetDesc FOutputDesc(FPooledRenderTargetDesc::Create2DDesc(FIntPoint(latticeDims.X * latticeDims.Z, latticeDims.Y * Q), EPixelFormat::PF_R32_FLOAT, FClearValueBinding::None, TexCreate_None, TexCreate_ShaderResource | TexCreate_UAV, false));
 		FOutputDesc.DebugName = TEXT("FCS_Output_RenderTarget");
 		GRenderTargetPool.FindFreeElement(RHICmdList, FOutputDesc, FPooledRenderTarget, TEXT("FCS_Output_RenderTarget"));
 	}
 	if (!UPooledRenderTarget.IsValid())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Vorticity pool is not Valid"));
-		FPooledRenderTargetDesc VorticityOutputDesc(FPooledRenderTargetDesc::Create2DDesc(cachedParams.GetRenderTargetSize(true), cachedParams.URenderTarget->GetRenderTargetResource()->TextureRHI->GetFormat(), FClearValueBinding::None, TexCreate_None, TexCreate_ShaderResource | TexCreate_UAV, false));
+		FPooledRenderTargetDesc VorticityOutputDesc(FPooledRenderTargetDesc::Create2DDesc(FIntPoint(latticeDims.X * latticeDims.Z, latticeDims.Y), cachedParams.URenderTarget->GetRenderTargetResource()->TextureRHI->GetFormat(), FClearValueBinding::None, TexCreate_None, TexCreate_ShaderResource | TexCreate_UAV, false));	// TODO: optimize format.
 		VorticityOutputDesc.DebugName = TEXT("UCS_Output_RenderTarget");
 		GRenderTargetPool.FindFreeElement(RHICmdList, VorticityOutputDesc, UPooledRenderTarget, TEXT("UCS_Output_RenderTarget"));
 	}
 	//auto textureUAVRef = RHICreateUnorderedAccessView(cachedParams.RenderTarget->GetRenderTargetResource()->TextureRHI);
+	if (!PorousStructSRV.IsValid())
+	{
+		// Test resource array. Sources: https://forums.unrealengine.com/t/get-data-back-from-compute-shader/12880 ,
+		// https://cpp.hotexamples.com/ru/examples/-/TResourceArray/AddUninitialized/cpp-tresourcearray-adduninitialized-method-examples.html , 
+		// https://veldrid.dev/articles/shaders.html
+		TResourceArray<int> porousBuffer;		// TODO: кэшировать буфер.
+		porousBuffer.Append(cachedParams.PorousDataArray, latticeDims.X * latticeDims.Y * latticeDims.Z);
+		FRHIResourceCreateInfo CreateInfo;
+		CreateInfo.ResourceArray = &porousBuffer;
+
+		//TRefCountPtr<FRHIStructuredBuffer>
+		FStructuredBufferRHIRef StructResource = RHICreateStructuredBuffer(
+			sizeof(int),
+			porousBuffer.Num() * sizeof(int),
+			BUF_UnorderedAccess | BUF_ShaderResource,
+			CreateInfo
+		);
+		PorousStructSRV = RHICreateShaderResourceView(StructResource);
+		//FUnorderedAccessViewRHIRef StructUAV = RHICreateUnorderedAccessView(StructResource, false, false);
+	}
 
 	//Unbind the previously bound render targets
 	UnbindRenderTargets(RHICmdList);
@@ -113,29 +142,16 @@ void FD3Q19CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList,
 	//);
 	//SamplerStateRHI = RHICreateSamplerState(SamplerStateInitializer);
 	
-	// Test resource array. Sources: https://forums.unrealengine.com/t/get-data-back-from-compute-shader/12880 ,
-	// https://cpp.hotexamples.com/ru/examples/-/TResourceArray/AddUninitialized/cpp-tresourcearray-adduninitialized-method-examples.html , 
-	// https://veldrid.dev/articles/shaders.html
-	TResourceArray<int> porousBuffer;		// TODO: кэшировать буфер.
-	porousBuffer.Append(cachedParams.PorousDataArray, 64 * 64 * 64);
-	FRHIResourceCreateInfo CreateInfo;
-	CreateInfo.ResourceArray = &porousBuffer;
 
-	FStructuredBufferRHIRef StructResource = RHICreateStructuredBuffer(
-		sizeof(int),
-		porousBuffer.Num() * sizeof(int),
-		BUF_UnorderedAccess | BUF_ShaderResource,
-		CreateInfo
-	);
-	FShaderResourceViewRHIRef PorousStructSRV = RHICreateShaderResourceView(StructResource);
-	//FUnorderedAccessViewRHIRef StructUAV = RHICreateUnorderedAccessView(StructResource, false, false);
+	
+	//FShaderResourceViewRHIRef FSRV = RHICreateShaderResourceView(FPooledRenderTarget->GetRenderTargetItem().ShaderResourceTexture, FRHITextureSRVCreateInfo());	не работает.
 
 
 	//Fill the shader parameters structure with tha cached data supplied by the client
 	FD3Q19CSDrift::FParameters DriftCSParameters;
 	DriftCSParameters.PorousData = PorousStructSRV;
 	DriftCSParameters.F_SamplerState = RHICreateSamplerState(SamplerStateInitializer);
-	DriftCSParameters.F_in = cachedParams.FRenderTarget->GetRenderTargetResource()->TextureRHI;
+	DriftCSParameters.F_in = FTexture;//fTextureSRV;//FSRV;	//cachedParams.FRenderTarget->GetRenderTargetResource()->TextureRHI;
 	DriftCSParameters.F_out = FPooledRenderTarget->GetRenderTargetItem().UAV;	// TODO: for UAV try bind.
 	DriftCSParameters.Rho0 = 100;
 	DriftCSParameters.Iteration = cachedParams.Iteration;
@@ -144,8 +160,9 @@ void FD3Q19CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList,
 	DriftCSParameters.Ny = cachedParams.GetLatticeDims().Y;
 	DriftCSParameters.Nz = cachedParams.GetLatticeDims().Z;
 
+	// TODO: F_in = F_out in collision.
 	FD3Q19CSCollision::FParameters CollisionCSParameters;
-	CollisionCSParameters.F_in = cachedParams.FRenderTarget->GetRenderTargetResource()->TextureRHI;
+	CollisionCSParameters.F_in = FTexture;//fTextureSRV;//FSRV;	//FPooledRenderTarget->GetRenderTargetItem().ShaderResourceTexture;
 	CollisionCSParameters.F_out = FPooledRenderTarget->GetRenderTargetItem().UAV;
 	CollisionCSParameters.Iteration = cachedParams.Iteration;
 	CollisionCSParameters.Nx = cachedParams.GetLatticeDims().X;
@@ -169,21 +186,21 @@ void FD3Q19CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList,
 	//TShaderMapRef<FParticlesCS> Particles(GetGlobalShaderMap(GMaxRHIFeatureLevel));
 
 	clock_t start, end;
-
 	start = clock();
 
 	// DRIFT:
 	FComputeShaderUtils::Dispatch(RHICmdList, D3Q19CSDrift, DriftCSParameters,
-		FIntVector(FMath::DivideAndRoundUp(cachedParams.GetRenderTargetSize().X, NUM_THREADS_PER_GROUP_DIMENSION),
-			FMath::DivideAndRoundUp(cachedParams.GetRenderTargetSize().Y / 19, NUM_THREADS_PER_GROUP_DIMENSION), 1));
+		FIntVector(FMath::DivideAndRoundUp(latticeDims.X * latticeDims.Z, NUM_THREADS_PER_GROUP_DIMENSION),
+			FMath::DivideAndRoundUp(latticeDims.Y, NUM_THREADS_PER_GROUP_DIMENSION), 1));
 	//Copy shader's output to the render target provided by the client
-	RHICmdList.CopyTexture(FPooledRenderTarget->GetRenderTargetItem().ShaderResourceTexture, cachedParams.FRenderTarget->GetRenderTargetResource()->TextureRHI, FRHICopyTextureInfo());
+	RHICmdList.CopyTexture(FPooledRenderTarget->GetRenderTargetItem().ShaderResourceTexture, FTexture, FRHICopyTextureInfo());
 
 	// COLLISION:
 	FComputeShaderUtils::Dispatch(RHICmdList, D3Q19CSCollision, CollisionCSParameters,
-		FIntVector(FMath::DivideAndRoundUp(cachedParams.GetRenderTargetSize().X, NUM_THREADS_PER_GROUP_DIMENSION),
-			FMath::DivideAndRoundUp(cachedParams.GetRenderTargetSize().Y / 19, NUM_THREADS_PER_GROUP_DIMENSION), 1));
-	RHICmdList.CopyTexture(FPooledRenderTarget->GetRenderTargetItem().ShaderResourceTexture, cachedParams.FRenderTarget->GetRenderTargetResource()->TextureRHI, FRHICopyTextureInfo());
+		FIntVector(FMath::DivideAndRoundUp(latticeDims.X * latticeDims.Z, NUM_THREADS_PER_GROUP_DIMENSION),
+			FMath::DivideAndRoundUp(latticeDims.Y, NUM_THREADS_PER_GROUP_DIMENSION), 1));
+	//RHICmdList.CopyTexture(FPooledRenderTarget->GetRenderTargetItem().ShaderResourceTexture, cachedParams.FRenderTarget->GetRenderTargetResource()->TextureRHI, FRHICopyTextureInfo());
+	RHICmdList.CopyTexture(FPooledRenderTarget->GetRenderTargetItem().ShaderResourceTexture, FTexture, FRHICopyTextureInfo());
 	RHICmdList.CopyTexture(UPooledRenderTarget->GetRenderTargetItem().ShaderResourceTexture, cachedParams.URenderTarget->GetRenderTargetResource()->TextureRHI, FRHICopyTextureInfo());
 	//RHICmdList.SetComputeShader(D3Q19CSDrift.GetComputeShader());	// зачем?
 
@@ -194,10 +211,7 @@ void FD3Q19CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList,
 	//RHICmdList.CopyTexture(PosPooledRenderTarget->GetRenderTargetItem().ShaderResourceTexture, cachedParams.PosRenderTarget->GetRenderTargetResource()->TextureRHI, FRHICopyTextureInfo());
 
 	end = clock();
-
 	double result = ((double)end - start) / ((double)CLOCKS_PER_SEC);
-
-
 	int prob = 0;
 }
 

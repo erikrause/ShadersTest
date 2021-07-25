@@ -1,10 +1,6 @@
-PRAGMA_DISABLE_OPTIMIZATION
-
 #include "D3Q19CSManager.h"
-#include "Prob.h"
-#include "D3Q19CSDrift.h"
-#include "D3Q19CSCollision.h"
-
+#include "D3Q19Drift.h"
+#include "D3Q19Collision.h"
 
 #include "RenderGraphUtils.h"
 #include "RenderTargetPool.h"
@@ -77,7 +73,7 @@ void FD3Q19CSManager::EndRendering()
 }
 
 //Update the parameters by a providing an instance of the Parameters structure used by the shader manager
-void FD3Q19CSManager::UpdateParameters(D3Q19CSParameters& params)
+void FD3Q19CSManager::UpdateParameters(FD3Q19CSParameters& params)
 {
 	cachedParams = params;
 	bCachedParamsAreValid = true;

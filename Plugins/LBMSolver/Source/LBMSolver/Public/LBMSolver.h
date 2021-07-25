@@ -5,7 +5,7 @@
 #include "Modules/ModuleInterface.h"
 #include "Modules/ModuleManager.h"
 
-class LBMSOLVER_API FLBMSolverModule : public IModuleInterface		// CHECK: для чего LBMSOLVER_API?
+class FLBMSolverModule : public IModuleInterface		// CHECK: нужен ли LBMSOLVER_API?
 {
 public:
 	static inline FLBMSolverModule& Get()

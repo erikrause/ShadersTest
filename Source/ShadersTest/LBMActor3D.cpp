@@ -6,7 +6,6 @@ PRAGMA_DISABLE_OPTIMIZATION
 #include "Kismet/GameplayStatics.h"
 #include <Runtime/Engine/Classes/Kismet/KismetRenderingLibrary.h>
 #include "D3Q19CSManager.h"
-//#include "LBMSolver/D3Q19CSManager.h"
 #include <Runtime/Engine/Classes/Engine/TextureRenderTargetVolume.h>
 #include <Runtime\Engine\Classes\Engine\VolumeTexture.h>
 #include <Runtime/Core/Public/PixelFormat.h>
@@ -67,10 +66,10 @@ void ALBMActor3D::BeginPlay()
 	URenderTarget->UpdateResource();
 
 
-	// Костыль: пришлось скопировать ссылку на текстуру в UVolumeTexture, т.к. у VolumeRenderTargetDataInterface в Niagara нету сэмплера.
-	//TODO: убрать в модуль шейдера, удалить "RenderCore" из зависимостей модуля ShaderTest
-	ProbVolText->TextureReference = URenderTarget->TextureReference;
-	ProbVolText->Resource = URenderTarget->Resource;
+	//// Костыль: пришлось скопировать ссылку на текстуру в UVolumeTexture, т.к. у VolumeRenderTargetDataInterface в Niagara нету сэмплера.
+	////TODO: убрать в модуль шейдера, удалить "RenderCore" из зависимостей модуля ShaderTest
+	//ProbVolText->TextureReference = URenderTarget->TextureReference;
+	//ProbVolText->Resource = URenderTarget->Resource;
 
 
 
@@ -102,7 +101,7 @@ void ALBMActor3D::Tick(float DeltaTime)
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Iteration: %i"), iteration));
 
 	//Update parameters
-	D3Q19CSParameters parameters(URenderTarget, porousDataArray, _amaretto->Dims);
+	FD3Q19CSParameters parameters(URenderTarget, porousDataArray, _amaretto->Dims);
 	parameters.Iteration = iteration;
 	FD3Q19CSManager::Get()->UpdateParameters(parameters);
 

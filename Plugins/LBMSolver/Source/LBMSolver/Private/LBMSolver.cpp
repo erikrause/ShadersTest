@@ -1,13 +1,15 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "LBMSolver.h"
+#include "Interfaces/IPluginManager.h"
 
 #define LOCTEXT_NAMESPACE "FLBMSolverModule"
 
 void FLBMSolverModule::StartupModule()
 {
 	// Maps virtual shader source directory to actual shaders directory on disk.
-	FString ShaderDirectory = FPaths::Combine(FPaths::ProjectDir(), TEXT("Shaders/Private"));
+	static FString baseDir = IPluginManager::Get().FindPlugin(TEXT("LBMSolver"))->GetBaseDir();
+	FString ShaderDirectory = FPaths::Combine(baseDir, TEXT("Shaders/Private"));
 	AddShaderSourceDirectoryMapping("/CustomShaders", ShaderDirectory);
 }
 

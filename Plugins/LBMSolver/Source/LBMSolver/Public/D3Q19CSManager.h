@@ -12,7 +12,7 @@ enum LbmPrecision
 };
 
 ////This struct act as a container for all the parameters that the client needs to pass to the Compute Shader Manager.
-//struct D3Q19CSParameters
+//struct FD3Q19CSParameters
 //{
 //	UTextureRenderTarget2D* RenderTarget;
 //
@@ -21,8 +21,8 @@ enum LbmPrecision
 //		return CachedRenderTargetSize;
 //	}
 //
-//	D3Q19CSParameters() { }
-//	D3Q19CSParameters(UTextureRenderTarget2D* IORenderTarget)
+//	FD3Q19CSParameters() { }
+//	FD3Q19CSParameters(UTextureRenderTarget2D* IORenderTarget)
 //		: RenderTarget(IORenderTarget)
 //	{
 //		CachedRenderTargetSize = RenderTarget ? FIntPoint(RenderTarget->SizeX, RenderTarget->SizeY) : FIntPoint::ZeroValue;
@@ -35,7 +35,7 @@ enum LbmPrecision
 /// <summary>
 /// A singleton Shader Manager for our Shader Type
 /// </summary>
-class FD3Q19CSManager	//LBMSOLVER_API
+class LBMSOLVER_API FD3Q19CSManager
 {
 public:
 	//Get the instance
@@ -56,7 +56,7 @@ public:
 	void EndRendering();
 
 	// Call this whenever you have new parameters to share.
-	void UpdateParameters(D3Q19CSParameters& DrawParameters);
+	void UpdateParameters(FD3Q19CSParameters& DrawParameters);
 
 private:
 	//Private constructor to prevent client from instanciating
@@ -69,7 +69,7 @@ private:
 	FDelegateHandle OnPostResolvedSceneColorHandle;
 
 	//Cached Shader Manager Parameters
-	D3Q19CSParameters cachedParams;
+	FD3Q19CSParameters cachedParams;
 
 	//Whether we have cached parameters to pass to the shader or not
 	volatile bool bCachedParamsAreValid;

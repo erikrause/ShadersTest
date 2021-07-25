@@ -57,4 +57,4 @@ public:
 
 // This will tell the engine to create the shader and where the shader entry point is.
 //                        ShaderType              ShaderPath             Shader function name    Type
-IMPLEMENT_GLOBAL_SHADER(FD3Q19CSDrift, "/CustomShaders/D3Q19/D3Q19CS-drift.usf", "Main", SF_Compute);
+IMPLEMENT_GLOBAL_SHADER(FD3Q19CSDrift, "/CustomShaders/D3Q19CSDrift.usf", "Main", SF_Compute);

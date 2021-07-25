@@ -1,11 +1,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-//#include "D3Q19CSParameters.h"
+//#include "FD3Q19CSParameters.h"
 #include <Runtime/Engine/Classes/Engine/TextureRenderTargetVolume.h>
 
 //This struct act as a container for all the parameters that the client needs to pass to the Compute Shader Manager.
-struct D3Q19CSParameters
+struct FD3Q19CSParameters
 {
 	//// “екстура дл€ хранени€ распределени€ частиц в узлах.
 	//UTextureRenderTarget2D* FRenderTarget;
@@ -41,8 +41,8 @@ struct D3Q19CSParameters
 		return _latticeDims;
 	}
 
-	D3Q19CSParameters() { }
-	D3Q19CSParameters(UTextureRenderTargetVolume* uRenderTarget, int* porousDataArray, FIntVector latticeDims)
+	FD3Q19CSParameters() { }
+	FD3Q19CSParameters(UTextureRenderTargetVolume* uRenderTarget, int* porousDataArray, FIntVector latticeDims)
 		: URenderTarget(uRenderTarget)
 	{
 		PorousDataArray = porousDataArray;

@@ -2,7 +2,7 @@
 
 #include "/Engine/Public/Platform.ush"
 
-#include "D3Q19CS-constants.usf"
+#include "D3Q19CSConstants.usf"
 
 float Rho0; // = 100; // average density
 int Iteration;

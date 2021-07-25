@@ -39,7 +39,8 @@ public class LBMSolver : ModuleRules
 				"Engine",
 				"Renderer",
 				"RenderCore",
-				"RHI"
+				"RHI",
+				"Projects"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

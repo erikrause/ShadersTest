@@ -34,10 +34,12 @@ public class LBMSolver : ModuleRules
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
+				"Core",
 				"CoreUObject",
 				"Engine",
-				"Slate",
-				"SlateCore",
+				"Renderer",
+				"RenderCore",
+				"RHI"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

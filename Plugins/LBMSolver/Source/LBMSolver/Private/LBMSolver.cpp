@@ -6,7 +6,9 @@
 
 void FLBMSolverModule::StartupModule()
 {
-	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
+	// Maps virtual shader source directory to actual shaders directory on disk.
+	FString ShaderDirectory = FPaths::Combine(FPaths::ProjectDir(), TEXT("Shaders/Private"));
+	AddShaderSourceDirectoryMapping("/CustomShaders", ShaderDirectory);
 }
 
 void FLBMSolverModule::ShutdownModule()

@@ -9,6 +9,6 @@ public class ShadersTestTarget : TargetRules
 	{
 		Type = TargetType.Game;
 		DefaultBuildSettings = BuildSettingsVersion.V2;
-		ExtraModuleNames.AddRange( new string[] { "ShadersTest", "CustomShadersDeclarations" } );
+		ExtraModuleNames.AddRange( new string[] { "ShadersTest" } );
 	}
 }

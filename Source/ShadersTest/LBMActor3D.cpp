@@ -5,7 +5,8 @@ PRAGMA_DISABLE_OPTIMIZATION
 
 #include "Kismet/GameplayStatics.h"
 #include <Runtime/Engine/Classes/Kismet/KismetRenderingLibrary.h>
-#include "CustomShadersDeclarations/D3Q19CSManager.h"
+#include "D3Q19CSManager.h"
+//#include "LBMSolver/D3Q19CSManager.h"
 #include <Runtime/Engine/Classes/Engine/TextureRenderTargetVolume.h>
 #include <Runtime\Engine\Classes\Engine\VolumeTexture.h>
 #include <Runtime/Core/Public/PixelFormat.h>

@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 //#include "D3Q19CSParameters.h"
-#include "Runtime/Engine/Classes/Engine/TextureRenderTarget2D.h"
+#include <Runtime/Engine/Classes/Engine/TextureRenderTargetVolume.h>
 
 //This struct act as a container for all the parameters that the client needs to pass to the Compute Shader Manager.
 struct D3Q19CSParameters
@@ -11,7 +11,7 @@ struct D3Q19CSParameters
 	//UTextureRenderTarget2D* FRenderTarget;
 
 	// “екстура дл€ хранени€ скоростей в узлах.
-	UTextureRenderTarget2D* URenderTarget;
+	UTextureRenderTargetVolume* URenderTarget;
 
 	// Test.
 	int Iteration = 0;
@@ -42,7 +42,7 @@ struct D3Q19CSParameters
 	}
 
 	D3Q19CSParameters() { }
-	D3Q19CSParameters(UTextureRenderTarget2D* uRenderTarget, int* porousDataArray, FIntVector latticeDims)
+	D3Q19CSParameters(UTextureRenderTargetVolume* uRenderTarget, int* porousDataArray, FIntVector latticeDims)
 		: URenderTarget(uRenderTarget)
 	{
 		PorousDataArray = porousDataArray;

@@ -24,16 +24,16 @@ public:
 		//SHADER_PARAMETER_UAV(FRWBuffer<int>, PorousData)
 		//SHADER_PARAMETER_STRUCT(int32, PorousData)
 		//SHADER_PARAMETER_ARRAY(int, PorousData, [2048])
-		SHADER_PARAMETER_TEXTURE(Texture2D<float>, F_in)
+		SHADER_PARAMETER_TEXTURE(Texture3D<float>, F_in)
 		//SHADER_PARAMETER_SRV(Texture2D<float>, F_in)
-		SHADER_PARAMETER_UAV(RWTexture2D<float>, F_out)
-		SHADER_PARAMETER_UAV(RWTexture2D<float3>, U)
+		SHADER_PARAMETER_UAV(RWTexture3D<float>, F_out)
+		SHADER_PARAMETER_UAV(RWTexture3D<float3>, U)
 		//SHADER_PARAMETER(float, Tau)
 		SHADER_PARAMETER(int, Iteration)
 		SHADER_PARAMETER(int, Nx)
 		SHADER_PARAMETER(int, Ny)
 		SHADER_PARAMETER(int, Nz)
-		END_SHADER_PARAMETER_STRUCT()
+	END_SHADER_PARAMETER_STRUCT()
 
 public:
 	//Called by the engine to determine which permutations to compile for this shader

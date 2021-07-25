@@ -4,6 +4,13 @@
 #include "D3Q19CSParameters.h"
 #include "Runtime/Engine/Classes/Engine/TextureRenderTarget2D.h"
 
+/* Не используется (TODO) */
+enum LbmPrecision
+{
+	Single	=0,
+	Half	=1
+};
+
 ////This struct act as a container for all the parameters that the client needs to pass to the Compute Shader Manager.
 //struct D3Q19CSParameters
 //{
@@ -39,6 +46,8 @@ public:
 		return instance;
 	};
 
+	void InitResources(UTextureRenderTargetVolume* UTextureRenderTargetVolume, FIntVector latticeDims, LbmPrecision lbmPrecision = LbmPrecision::Single);
+
 	// Call this when you want to hook onto the renderer and start executing the compute shader. The shader will be dispatched once per frame.
 	void BeginRendering();
 
@@ -64,11 +73,21 @@ private:
 	//Whether we have cached parameters to pass to the shader or not
 	volatile bool bCachedParamsAreValid;
 
-	//Reference to a pooled render target where the shader will write its output
-	FTexture2DRHIRef FTexture;
-	TRefCountPtr<IPooledRenderTarget> FPooledRenderTarget;
-	TRefCountPtr<IPooledRenderTarget> UPooledRenderTarget;
-	FShaderResourceViewRHIRef PorousStructSRV;
+	
+	/* Распределение частиц на входе */
+	FTexture3DRHIRef FInputTexture;
+
+	/* Распределение частиц на выходе шейдеров Drift и Collision */
+	FTexture3DRHIRef FOutputTexture;
+	FUnorderedAccessViewRHIRef FOutputTexture_UAV;
+	FShaderResourceViewRHIRef FOutputTexture_SRV;
+
+	/* Значения глобальных скоростей в узлах */
+	FTexture3DRHIRef UOutputTexture;
+	FUnorderedAccessViewRHIRef UOutputTexture_UAV;
+
+	/* Ресурс для хранения пористой структуры */
+	FShaderResourceViewRHIRef PorousStructSRV;	// TODO: make 3D and do perfomance comprasion.
 
 	//uint32 _iteration = 0;
 	//uint32 _maxIteration = 5000;

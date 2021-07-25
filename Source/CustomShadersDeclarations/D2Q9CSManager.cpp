@@ -104,7 +104,7 @@ void FD2Q9CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList, 
 	//auto textureUAVRef = RHICreateUnorderedAccessView(cachedParams.RenderTarget->GetRenderTargetResource()->TextureRHI);
 
 	//Unbind the previously bound render targets
-	UnbindRenderTargets(RHICmdList);
+	//UnbindRenderTargets(RHICmdList);
 
 	//Specify the resource transition, we're executing this in post scene rendering so we set it to Graphics to Compute
 	RHICmdList.TransitionResource(EResourceTransitionAccess::ERWBarrier, EResourceTransitionPipeline::EGfxToCompute, FPooledRenderTarget->GetRenderTargetItem().UAV);
@@ -210,36 +210,36 @@ void FD2Q9CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList, 
 
 
 
-// For texture debugging
-void FD2Q9CSManager::GetTexturePixels(FTexture2DRHIRef Texture, TArray<FColor>& OutPixels)
-{
-	struct FReadSurfaceContext
-	{
-		FTexture2DRHIRef Texture;
-		TArray<FColor>* OutData;
-		FIntRect Rect;
-		FReadSurfaceDataFlags Flags;
-	};
-
-	OutPixels.Reset();
-	FReadSurfaceContext ReadSurfaceContext =
-	{
-		Texture,
-		&OutPixels,
-		FIntRect(0, 0, Texture->GetSizeXY().X, Texture->GetSizeXY().Y),
-		FReadSurfaceDataFlags(RCM_UNorm, CubeFace_MAX)
-	};
-
-	ENQUEUE_UNIQUE_RENDER_COMMAND_ONEPARAMETER(
-		ReadSurfaceCommand,
-		FReadSurfaceContext, Context, ReadSurfaceContext,
-		{
-			RHICmdList.ReadSurfaceData(
-				Context.Texture,
-				Context.Rect,
-				*Context.OutData,
-				Context.Flags
-			);
-		});
-	FlushRenderingCommands();
-}
+//// For texture debugging
+//void FD2Q9CSManager::GetTexturePixels(FTexture2DRHIRef Texture, TArray<FColor>& OutPixels)
+//{
+//	struct FReadSurfaceContext
+//	{
+//		FTexture2DRHIRef Texture;
+//		TArray<FColor>* OutData;
+//		FIntRect Rect;
+//		FReadSurfaceDataFlags Flags;
+//	};
+//
+//	OutPixels.Reset();
+//	FReadSurfaceContext ReadSurfaceContext =
+//	{
+//		Texture,
+//		&OutPixels,
+//		FIntRect(0, 0, Texture->GetSizeXY().X, Texture->GetSizeXY().Y),
+//		FReadSurfaceDataFlags(RCM_UNorm, CubeFace_MAX)
+//	};
+//
+//	ENQUEUE_UNIQUE_RENDER_COMMAND_ONEPARAMETER(
+//		ReadSurfaceCommand,
+//		FReadSurfaceContext, Context, ReadSurfaceContext,
+//		{
+//			RHICmdList.ReadSurfaceData(
+//				Context.Texture,
+//				Context.Rect,
+//				*Context.OutData,
+//				Context.Flags
+//			);
+//		});
+//	FlushRenderingCommands();
+//}

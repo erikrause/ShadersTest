@@ -21,13 +21,17 @@ public:
 	//	class UTextureRenderTarget2D* FRenderTarget;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shader)
-		class UTextureRenderTarget2D* URenderTarget;
+		class UTextureRenderTargetVolume* URenderTarget;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shader)
+		class UVolumeTexture* ProbVolText;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shader)
 		FIntVector LatticeDims = FIntVector(64, 64, 64);
 
 	//UPROPERTY(BlueprintReadWrite, Category = Porous)
 		UInstancedStaticMeshComponent* PorousBoundariesMeshes;
+
 public:
 	// Sets default values for this pawn's properties
 	ALBMActor3D();

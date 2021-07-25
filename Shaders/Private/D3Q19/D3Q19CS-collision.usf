@@ -4,18 +4,20 @@
 
 #include "D3Q19CS-constants.usf"
 
+#define ZERO_MIP 0
+
 static float Tau = 2.6;
 int Iteration;
 
-Texture2D<float> F_in;     // F with current t
-RWTexture2D<float> F_out;  // t + 1
-RWTexture2D<float3> U;  // TODO: try Testure3D.
+Texture3D<float> F_in;     // F with current t
+RWTexture3D<float> F_out;  // t + 1
+RWTexture3D<float3> U;      // output velocity
 StructuredBuffer<int> PorousData;
 //RWTexture2D<float> PorousTarget;
 
-bool isBoundary(int x, int y, int z)
+bool isBoundary(uint3 cellId)
 {
-    return PorousData[x + y * Nx + z * Nx * Ny] == 0;
+    return PorousData[cellId.x + cellId.y * Nx + cellId.z * Nx * Ny] == 0;
 }
 
 float getLocalRho(float f[Q])
@@ -33,32 +35,31 @@ float getLocalRho(float f[Q])
 void Main(uint3 DTid : SV_DispatchThreadID)
 {
     // INIT:
-    int i; // for iterator.
-    // Координаты рассчетной сетки LBM:
-    // поскольку текстура RenderTarget двумерная, то в измерениях текстуры x хранятся несколько измерений массива LBM:
-    // - в X текстуры: X и Z пространства узлов;
-    // - в Y текстуры: Y пространства узлов и Q направлений скоростей скоростей каждого узла.
-    const int x = DTid.x % Nx;
-    const int y = DTid.y;
-    const int z = DTid.x / Nx;
+    uint i; // for iterator.
+    // Координаты текущей ячейки рассчетной сетки LBM: 
+    const uint3 cellId = DTid;
     
     // Текстурные координаты (2D): в одном потоке мы обрабатываем все направления скоростей, поэтому расширяем "y" в тестуре F.
-    const int x_tex_u = DTid.x;
-    const int y_tex_u = DTid.y;
-    const int x_tex_f = DTid.x;
-    const int y_tex_f = DTid.y * Q; // масштабируем Y {0..100} -> Y {0..900}, т.к. в одном узле сетки надо хранить 19 значений скорости (для каждого нарпавления).
+    //const uint3 fTexCoord = uint3(DTid.x, DTid.y, DTid.z * Q);
+    //const int x_tex_u = DTid.x;
+    //const int y_tex_u = DTid.y;
+    //const int x_tex_f = DTid.x;
+    //const int y_tex_f = DTid.y * Q; // масштабируем Y {0..100} -> Y {0..900}, т.к. в одном узле сетки надо хранить 19 значений скорости (для каждого нарпавления).
     
     float3 u = float3(0, 0, 0);
+    
         
-    float f[Q]; // TODO: перенести в регистровую или разделяемую память.
+    /* Копирование из глобальной памяти в локальную */
+    float f[Q];
     for (i = 0; i < Q; i++)
     {
-        f[i] = F_in[int2(x_tex_f, y_tex_f + i)];
+        //F_in[uint3(...)];
+        f[i] = F_in[uint3(cellId.x, cellId.y, cellId.z * Q + i)]; //uint3(cellCoord.x, cellCoord.y, cellCoord.z + i)
     }
     
     
     //COLLISION:
-    if (!isBoundary(x, y, z)) //((pow((x - Nx / 4), 2) + pow((y - Ny / 2), 2)) < pow((Ny / 4), 2))
+    if (!isBoundary(cellId)) //((pow((x - Nx / 4), 2) + pow((y - Ny / 2), 2)) < pow((Ny / 4), 2))
     {
         float rho = getLocalRho(f);
         
@@ -89,12 +90,14 @@ void Main(uint3 DTid : SV_DispatchThreadID)
     {
         if (Iteration > 0)
         {
-            F_out[int2(x_tex_f, y_tex_f + i)] = f[i];
+            F_out[uint3(cellId.x, cellId.y, cellId.z * Q + i)] = f[i];
         }
     }
     
     // U OUTPUT:
-    U[int2(x_tex_u, y_tex_u)] = u;
+    U[uint3(cellId.x, cellId.y, cellId.z)] = u;
+    //// test:
+    //U[uint3(cellId.x, cellId.y, cellId.z)] = (float)cellId.x / 64;
     
 
     //// POROUS BOIUNDARIES OUT: - TODO: сделать через дискретное преобразование Лапласа.

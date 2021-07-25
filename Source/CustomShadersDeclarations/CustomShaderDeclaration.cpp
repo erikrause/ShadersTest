@@ -141,7 +141,7 @@ void FWhiteNoiseCSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmd
 	}
 
 	//Unbind the previously bound render targets
-	UnbindRenderTargets(RHICmdList);
+	//UnbindRenderTargets(RHICmdList);
 
 	//Specify the resource transition, we're executing this in post scene rendering so we set it to Graphics to Compute
 	RHICmdList.TransitionResource(EResourceTransitionAccess::ERWBarrier, EResourceTransitionPipeline::EGfxToCompute, FPooledRenderTarget->GetRenderTargetItem().UAV);

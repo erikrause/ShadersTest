@@ -1,0 +1,132 @@
+#pragma enable_d3d11_debug_symbols
+
+#include "/Engine/Public/Platform.ush"
+
+#include "D3Q19CSDefinitions.usf"
+
+#define ZERO_MIP 0
+
+static float Tau = 2.6;
+int Iteration;
+
+Texture3D<float> F_in;     // F with current t
+RWTexture3D<float> F_out;  // t + 1
+RWTexture3D<float3> U;      // output velocity
+StructuredBuffer<int> PorousData;
+//RWTexture2D<float> PorousTarget;
+
+bool isBoundary(uint3 cellId)
+{
+    return PorousData[cellId.x + cellId.y * Nx + cellId.z * Nx * Ny] == 0;
+}
+
+float getLocalRho(float f[Q])
+{
+    float rho = 0;
+    for (int i = 0; i < Q; i++)
+    {
+        rho += f[i];
+    }
+    
+    return rho;
+}
+
+[numthreads(THREADGROUPSIZE_X, THREADGROUPSIZE_Y, THREADGROUPSIZE_Z)]
+void Main(uint3 DTid : SV_DispatchThreadID)
+{
+    // INIT:
+    uint i; // for iterator.
+    //  оординаты текущей €чейки рассчетной сетки LBM: 
+    const uint3 cellId = DTid;
+    
+    // “екстурные координаты (2D): в одном потоке мы обрабатываем все направлени€ скоростей, поэтому расшир€ем "y" в тестуре F.
+    //const uint3 fTexCoord = uint3(DTid.x, DTid.y, DTid.z * Q);
+    //const int x_tex_u = DTid.x;
+    //const int y_tex_u = DTid.y;
+    //const int x_tex_f = DTid.x;
+    //const int y_tex_f = DTid.y * Q; // масштабируем Y {0..100} -> Y {0..900}, т.к. в одном узле сетки надо хранить 19 значений скорости (дл€ каждого нарпавлени€).
+    
+    float3 u = float3(0, 0, 0);
+    
+        
+    /*  опирование из глобальной пам€ти в локальную */
+    float f[Q];
+    for (i = 0; i < Q; i++)
+    {
+        //F_in[uint3(...)];
+        f[i] = F_in[uint3(cellId.x, cellId.y, cellId.z * Q + i)]; //uint3(cellCoord.x, cellCoord.y, cellCoord.z + i)
+    }
+    
+    
+    //COLLISION:
+    if (!isBoundary(cellId)) //((pow((x - Nx / 4), 2) + pow((y - Ny / 2), 2)) < pow((Ny / 4), 2))
+    {
+        float rho = getLocalRho(f);
+        
+        for (i = 0; i < Q; i++)
+        {
+            float3 e = float3(cxs[i], cys[i], czs[i]);
+            u += f[i] * e;
+        }
+        u /= rho;
+    
+        
+        float f_eq[Q];
+        float3 unit = float3(1, 1, 1); // единичный вектор.
+        for (i = 0; i < Q; i++)
+        {
+            float3 e = float3(cxs[i], cys[i], czs[i]); // lattice direction.
+
+            f_eq[i] = rho * weights[i] * (1 + 3 * dot(e * u, unit) +
+                                   9 * pow(dot(e * u, unit), 2) / 2 -
+                                   3 * dot(pow(u, 2), unit) / 2); // TODO: test 3D.
+            f[i] += -(1.0 / Tau) * (f[i] - f_eq[i]);
+        }
+    }
+        
+    
+    // F OUTPUT:
+    for (i = 0; i < Q; i++)
+    {
+        if (Iteration > 0)
+        {
+            F_out[uint3(cellId.x, cellId.y, cellId.z * Q + i)] = f[i];
+        }
+    }
+    
+    // U OUTPUT:
+    U[uint3(cellId.x, cellId.y, cellId.z)] = u;
+    //// test:
+    //U[uint3(cellId.x, cellId.y, cellId.z)] = (float)cellId.x / 64;
+    
+
+    //// POROUS BOIUNDARIES OUT: - TODO: сделать через дискретное преобразование Ћапласа.
+    //if (Iteration == 1 && isBoundary(x, y, z))
+    //{
+    //    PorousTarget[int2(x_tex_u, y_tex_u)] = 0;
+    //    const int neigbor_count = 6;
+    //    const int3 neigbour_dirs[neigbor_count] = { int3(-1, 0, 0), int3(0, -1, 0), int3(0, 0, -1), int3(1, 0, 0), int3(0, 1, 0), int3(0, 0, 1) };
+    //    for (i = 0; i < neigbor_count; i++)
+    //    {
+    //        int3 neighbour_coord = int3(x, y, z) + neigbour_dirs[i];
+    //        if (neighbour_coord.x == -1 || neighbour_coord.y == -1 || neighbour_coord.z == -1 ||
+    //            neighbour_coord.x == Nx || neighbour_coord.y == Ny || neighbour_coord.z == Nz)
+    //        {
+    //            PorousTarget[int2(x_tex_u, y_tex_u)] = 1;
+    //            i = neigbor_count; // end for loop.
+    //        }
+    //        else if (!isBoundary(neighbour_coord.x, neighbour_coord.y, neighbour_coord.z))
+    //        {
+    //            PorousTarget[int2(x_tex_u, y_tex_u)] = 1;
+    //            i = neigbor_count; // end for loop.
+    //        }
+
+    //    }
+
+    //}
+    
+    
+    // VORTICITY:
+    //Vorticity = 
+    //vorticity = (np.roll(ux, -1, axis=0) - np.roll(ux, 1, axis=0)) - (np.roll(uy, -1, axis=1) - np.roll(uy, 1, axis=1))
+}

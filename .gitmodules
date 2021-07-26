@@ -1,0 +1,3 @@
+[submodule "Plugins/Amaretto"]
+	path = Plugins/Amaretto
+	url = https://github.com/erikrause/UE4Amaretto

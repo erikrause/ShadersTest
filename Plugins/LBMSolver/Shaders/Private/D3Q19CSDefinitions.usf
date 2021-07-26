@@ -1,0 +1,44 @@
+static const int Q = 19; // number of directions.
+
+// INDEXES:                  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18.
+static const int cxs[19] = { 0,  1, -1,  0,  0,  0,  0,  1, -1,  1, -1,  1, -1,  1, -1,  0,  0,  0,  0 };
+static const int cys[19] = { 0,  0,  0,  1, -1,  0,  0,  1, -1, -1,  1,  0,  0,  0,  0,  1, -1,  1, -1 };
+static const int czs[19] = { 0,  0,  0,  0,  0,  1, -1,  0,  0,  0,  0,  1, -1, -1,  1,  1, -1, -1,  1 };
+static const int inverse_indexes[19] =  
+                           { 0,  2,  1,  4,  3,  6,  5,  8,  7, 10,  9, 12, 11, 14, 13, 16, 15, 18, 17 };
+
+static const float weights[19] =
+{
+    1.0 / 3.0,
+    1.0 / 18.0, 1.0 / 18.0, 1.0 / 18.0, 1.0 / 18.0, 1.0 / 18.0, 1.0 / 18.0,
+    1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0
+};
+
+static const float PI = 3.14159265f;
+
+
+int Nx;
+int Ny;
+int Nz;
+
+
+// Замкнуть пространство на противоположные грани.
+int3 closeField(int3 neighbour)
+{
+    int3 newNeighbour = int3(neighbour);
+    
+    if ((neighbour.x == -1) || (neighbour.x == Nx))
+    {
+        newNeighbour.x = abs(abs(neighbour.x) - Nx);
+    }
+    if ((neighbour.y == -1) || (neighbour.y == Ny))
+    {
+        newNeighbour.y = abs(abs(neighbour.y) - Ny);
+    }
+    if ((neighbour.z == -1) || (neighbour.z == Nz))
+    {
+        newNeighbour.z = abs(abs(neighbour.z) - Nz);
+    }
+    
+    return newNeighbour;
+}

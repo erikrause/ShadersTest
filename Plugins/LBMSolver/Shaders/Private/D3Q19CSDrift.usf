@@ -1,0 +1,137 @@
+#pragma enable_d3d11_debug_symbols
+
+#include "/Engine/Public/Platform.ush"
+
+#include "D3Q19CSDefinitions.usf"
+
+float Rho0; // = 100; // average density
+int Iteration;
+
+Texture3D<float> F_in;     // F with current t
+RWTexture3D<float> F_out;  // t + 1
+StructuredBuffer<int> PorousData;
+
+SamplerState F_SamplerState;    // не используетс€.
+
+bool isBoundary(const uint3 cellId)
+{
+    return PorousData[cellId.x + cellId.y * Nx + cellId.z * Nx * Ny] == 0;
+    //return x == 0 || x == 63 || y == 0 || y == 63 || z == 0 || z == 63;
+    //return ((pow((x - Nx / 4), 2) + pow((y - Ny / 2), 2)) < pow((Ny / 4), 2)); // || (x==62 || x==63);
+}
+
+void initArray(const uint3 cellId)
+{
+    //Fill init velocities:
+    for (int i = 0; i < Q; i++)
+    {
+        F_out[uint3(cellId.x, cellId.y, cellId.z * Q + i)] = 1;
+    }
+    // TODO: F_out[x][y] += rand;   - (добавить флуктуации)
+        
+        
+    // «адаем направление потока по направлению (1, 0, 0):
+    F_out[uint3(cellId.x, cellId.y, cellId.z * Q + 1)] += 2 * (1 + 0.2 * cos(2 * PI * cellId.x / Nx * 4));
+        
+    
+    
+    // Ќормализуем распределение направлений частиц по глобальной плотности:
+    float rho = 0; // текуща€ локальна€ плотность.
+    for (i = 0; i < Q; i++)
+    {
+        rho += F_out[uint3(cellId.x, cellId.y, cellId.z * Q + i)];
+    }
+    for (i = 0; i < Q; i++)
+    {
+        F_out[uint3(cellId.x, cellId.y, cellId.z * Q + i)] *= Rho0 / rho;
+    }
+        
+        
+    // √раничное условие:
+    if (isBoundary(cellId)) //((pow((x - Nx / 4), 2) + pow((y - Ny / 2), 2)) < pow((Ny / 4), 2))   //  (x > 0 && x < 3 && y > -1 && y < 2)
+    {
+        for (i = 0; i < Q; i++)
+        {
+            F_out[uint3(cellId.x, cellId.y, cellId .z * Q + i)] = 0;
+        }
+    }
+}
+
+
+[numthreads(THREADGROUPSIZE_X, THREADGROUPSIZE_Y, THREADGROUPSIZE_Z)]
+void Main(uint3 DTid : SV_DispatchThreadID)
+{
+    // INIT:
+    int i; // for iterator.
+    //  оординаты рассчетной сетки LBM:
+    const uint3 cellId = DTid;
+    
+    //// “екстурные координаты (2D): в одном потоке мы обрабатываем все направлени€ скоростей, поэтому расшир€ем y в тестуре.
+    //const int x_tex = DTid.x;
+    //const int y_tex = DTid.y * Q; // масштабируем Y {0..100} -> Y {0..900}, т.к. в одном узле сетки надо хранить 9 значений скорости (дл€ каждого направлени€).
+    
+    float3 u = float3(0, 0, 0);
+    
+    if (Iteration == 0)
+    {
+        initArray(cellId);   // TODO: init outside the shader.
+    }
+    
+    float f[Q];
+    for (i = 0; i < Q; i++)
+    {
+        f[i] = F_in[uint3(cellId.x, cellId.y, cellId.z * Q + i)];
+    }
+    
+        
+    // DRIFT:
+    //// Drift particles (with sampling): - TODO: test sampling vs indexing vs lerp perfomance.
+    //float2 uv;
+    //uv.x = (x_tex - 0.5) / Nx;
+    //uv.y = (y_tex + 3 + 0.5) / (Ny * 9);
+    ////float prob = F_in.Sample(samplerState, uv);
+    //F_out[int2(x_tex, y_tex + 3)] = F_in.SampleLevel(F_SamplerState, uv, 0);
+    
+    
+    // Drift particles to neighbours (with indexing):
+    for (int neighbour_id = 0; neighbour_id < Q; neighbour_id++)
+    {       
+        int3 neighbour = int3((int3) cellId - int3(cxs[neighbour_id], cys[neighbour_id], czs[neighbour_id])); // TODO: убрать преобразование из uint3 в int3.
+        neighbour = closeField(neighbour);
+        
+        //f[neighbour_id] = F_in[uint2(neighbour.x + neighbour.z * Nx, neighbour_y_tex + neighbour_id)];
+        f[neighbour_id] = F_in[uint3(neighbour.x, neighbour.y, neighbour.z * Q + neighbour_id)];
+    }
+    
+    
+    // REFLECT:
+    float f_reflect_temp[Q];
+    // Check is boundary and reflect:
+    if (isBoundary(cellId)) //((pow((x - Nx / 4), 2) + pow((y - Ny / 2), 2)) < pow((Ny / 4), 2))
+    {
+        for (i = 0; i < Q; i++)
+        {
+            f_reflect_temp[i] = f[inverse_indexes[i]];
+        }
+        f = f_reflect_temp;
+    }
+        
+    
+    // OUTPUT:
+    for (i = 0; i < Q; i++)
+    {
+        if (Iteration > 0)
+        {
+            F_out[uint3(cellId.x, cellId.y, cellId.z * Q + i)] = f[i];
+        }
+    }
+    
+    //TEST OUTPUT:
+    //F_out[uint3(cellId.x, cellId.y, cellId.z)] = PorousData[cellId.x + cellId.y * Nx + cellId.z * Nx * Ny];
+
+    
+    // VORTICITY:
+    //Vorticity = 
+    //vorticity = (np.roll(ux, -1, axis=0) - np.roll(ux, 1, axis=0)) - (np.roll(uy, -1, axis=1) - np.roll(uy, 1, axis=1))
+    
+}

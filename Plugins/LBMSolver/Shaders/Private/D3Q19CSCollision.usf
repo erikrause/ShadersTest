@@ -2,7 +2,7 @@
 
 #include "/Engine/Public/Platform.ush"
 
-#include "D3Q19CSConstants.usf"
+#include "D3Q19CSDefinitions.usf"
 
 #define ZERO_MIP 0
 

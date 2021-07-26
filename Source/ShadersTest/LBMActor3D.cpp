@@ -1,7 +1,7 @@
 PRAGMA_DISABLE_OPTIMIZATION
 
 #include "LBMActor3D.h"
-#include "Amaretto.h"
+#include "AmarettoFileManager.h"
 
 #include "Kismet/GameplayStatics.h"
 #include <Runtime/Engine/Classes/Kismet/KismetRenderingLibrary.h>
@@ -21,7 +21,7 @@ ALBMActor3D::ALBMActor3D()
 	static_mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Static Mesh"));
 
 	FString projectDir = FPaths::ProjectDir();
-	_amaretto = new Amaretto(projectDir + FString("/Porous/img, c0=22.5, c=23.4.amaretto"));	//("/Porous/cylinder64.amaretto"));// //cylinder.amaretto")); //XYZtest.amaretto"));
+	_amaretto = new AmarettoFileManager(projectDir + FString("/Porous/img, c0=22.5, c=23.4.amaretto"));	//("/Porous/cylinder64.amaretto"));// //cylinder.amaretto")); //XYZtest.amaretto"));
 	porousDataArray = _amaretto->GetPorousDataArray();
 
 	PorousBoundariesMeshes = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("Porous boundaries"));

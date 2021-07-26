@@ -1,8 +1,6 @@
-PRAGMA_DISABLE_OPTIMIZATION
+#include "AmarettoFileManager.h"
 
-#include "Amaretto.h"
-
-Amaretto::Amaretto(FString path)
+AmarettoFileManager::AmarettoFileManager(FString path)
 {
 	TArray<uint8> byteArray;
 	FFileHelper::LoadFileToArray(byteArray, *path);
@@ -37,17 +35,17 @@ Amaretto::Amaretto(FString path)
 	int prob = 0;
 }
 
-int* Amaretto::GetPorousDataArray() 
+int* AmarettoFileManager::GetPorousDataArray() 
 {
 	return porousDataRaw;
 }
 
-int Amaretto::GetPorousData(uint16 x, uint16 y, uint16 z)
+int AmarettoFileManager::GetPorousData(uint16 x, uint16 y, uint16 z)
 {
 	return porousDataRaw[x + y * Dims.X + z * Dims.X * Dims.Y];
 }
 
-TArray<FIntVector> Amaretto::GetBoundariesCoordinates(int16 valueInsideBoundaries)
+TArray<FIntVector> AmarettoFileManager::GetBoundariesCoordinates(int16 valueInsideBoundaries)
 {
 	TArray<FIntVector> BoundariesCoords;
 

@@ -39,14 +39,14 @@ public:
 
 protected:
 
-	class Amaretto* _amaretto;
+	class AmarettoFileManager* _amaretto;
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 	virtual void BeginDestroy() override;
 
-	//Amaretto* _amarettoTest;
+	//AmarettoFileManager* _amarettoTest;
 	int* porousDataArray;
 	int iteration = -1;
 

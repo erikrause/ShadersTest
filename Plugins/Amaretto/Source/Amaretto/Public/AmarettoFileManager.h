@@ -2,12 +2,12 @@
 
 #include "CoreMinimal.h"
 
-class Amaretto
+class AMARETTO_API AmarettoFileManager
 {
 
 public:
 
-	Amaretto(FString path);
+	AmarettoFileManager(FString path);
 	//static  ReadFile(string path);
 
 	FIntVector Dims;

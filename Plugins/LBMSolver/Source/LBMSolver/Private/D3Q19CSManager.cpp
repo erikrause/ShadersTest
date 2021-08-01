@@ -5,6 +5,7 @@
 #include "RenderGraphUtils.h"
 #include "RenderTargetPool.h"
 #include "time.h"
+#include <Runtime\Engine\Classes\Engine\VolumeTexture.h>
 
 #include "Modules/ModuleManager.h"
 
@@ -13,7 +14,7 @@
 //Static members
 FD3Q19CSManager* FD3Q19CSManager::instance = nullptr;
 
-void FD3Q19CSManager::InitResources(UTextureRenderTargetVolume* UTextureRenderTargetVolume, FIntVector latticeDims, LbmPrecision lbmPrecision)
+void FD3Q19CSManager::InitResources(UTextureRenderTargetVolume* UTextureRenderTargetVolume, UVolumeTexture* probVolText, FIntVector latticeDims, LbmPrecision lbmPrecision)
 {
 	// TODO: create UAV from URenderTarget:	auto bprob = cachedParams.URenderTarget->bCanCreateUAV;
 
@@ -31,6 +32,9 @@ void FD3Q19CSManager::InitResources(UTextureRenderTargetVolume* UTextureRenderTa
 	////UOutputTexture = RHICreateTexture3D(latticeDims.X, latticeDims.Y, latticeDims.Z, EPixelFormat::PF_R32_FLOAT, 1, TexCreate_ShaderResource | TexCreate_UAV, resourceCreateInfo);
 	UOutputTexture = UTextureRenderTargetVolume->GameThread_GetRenderTargetResource()->TextureRHI.GetReference()->GetTexture3D();
 	UOutputTexture_UAV = RHICreateUnorderedAccessView(UOutputTexture);
+
+	//UTextureRenderTargetVolume->GetRenderTargetResource()->TextureRHI;
+	ProbVolTexRHI = probVolText->Resource->TextureRHI;//GetRenderTargetResource()->TextureRHI
 }
 
 //Begin the execution of the compute shader each frame
@@ -189,6 +193,7 @@ void FD3Q19CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList,
 				   FMath::DivideAndRoundUp(latticeDims.Z, 1)));
 	//RHICmdList.CopyTexture(FPooledRenderTarget->GetRenderTargetItem().ShaderResourceTexture, cachedParams.FRenderTarget->GetRenderTargetResource()->TextureRHI, FRHICopyTextureInfo());
 	RHICmdList.CopyTexture(FOutputTexture, FInputTexture, FRHICopyTextureInfo());
+	RHICmdList.CopyTexture(UOutputTexture, ProbVolTexRHI, FRHICopyTextureInfo());
 	//RHICmdList.CopyTexture(UOutputTexture, cachedParams.URenderTarget->GetRenderTargetResource()->TextureRHI, FRHICopyTextureInfo());
 	//RHICmdList.SetComputeShader(D3Q19CSDrift.GetComputeShader());	// зачем?
 	// TODO: unbind?

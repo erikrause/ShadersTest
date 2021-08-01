@@ -74,7 +74,7 @@ void ALBMActor3D::BeginPlay()
 
 
 	// Инициализация CS:
-	FD3Q19CSManager::Get()->InitResources(URenderTarget, LatticeDims);
+	FD3Q19CSManager::Get()->InitResources(URenderTarget, ProbVolText, LatticeDims);
 	FD3Q19CSManager::Get()->BeginRendering();
 
 

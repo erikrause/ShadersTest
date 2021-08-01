@@ -47,7 +47,7 @@ public:
 		//return new FD3Q19CSManager();
 	};
 
-	void InitResources(UTextureRenderTargetVolume* UTextureRenderTargetVolume, FIntVector latticeDims, LbmPrecision lbmPrecision = LbmPrecision::Single);
+	void InitResources(UTextureRenderTargetVolume* UTextureRenderTargetVolume, UVolumeTexture* probVolText, FIntVector latticeDims, LbmPrecision lbmPrecision = LbmPrecision::Single);
 
 	// Call this when you want to hook onto the renderer and start executing the compute shader. The shader will be dispatched once per frame.
 	void BeginRendering();
@@ -89,6 +89,9 @@ private:
 
 	/* Ресурс для хранения пористой структуры */
 	FShaderResourceViewRHIRef PorousStructSRV;	// TODO: make 3D and do perfomance comprasion.
+
+
+	FTextureRHIRef ProbVolTexRHI;
 
 	//uint32 _iteration = 0;
 	//uint32 _maxIteration = 5000;

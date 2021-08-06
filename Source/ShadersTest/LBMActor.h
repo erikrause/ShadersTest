@@ -1,10 +1,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameFramework/Pawn.h"
 #include "LBMActor.generated.h"
 
 UCLASS()
-class SHADERSTEST_API ALBMActor : public AActor
+class SHADERSTEST_API ALBMActor : public APawn
 {
 	GENERATED_BODY()
 
@@ -22,8 +23,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = LBM)
 		class UTextureRenderTargetVolume* URenderTarget;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = LBM)
-		uint32 MaxIterations = 10;
+	UPROPERTY(EditAnywhere, Category = LBM)
+		int MaxIterations;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = LBM)
 		FIntVector _latticeDims = FIntVector(64, 64, 64);

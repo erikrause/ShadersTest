@@ -1,11 +1,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Pawn.h"
-#include "LBMActor3D.generated.h"
+#include "LBMActor.generated.h"
 
 UCLASS()
-class SHADERSTEST_API ALBMActor3D : public APawn
+class SHADERSTEST_API ALBMActor : public AActor
 {
 	GENERATED_BODY()
 
@@ -20,21 +19,23 @@ public:
 	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shader)
 	//	class UTextureRenderTarget2D* FRenderTarget;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shader)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = LBM)
 		class UTextureRenderTargetVolume* URenderTarget;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shader)
-		class UVolumeTexture* ProbVolText;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = LBM)
+		uint32 MaxIterations = 10;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shader)
-		FIntVector LatticeDims = FIntVector(64, 64, 64);
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = LBM)
+		FIntVector _latticeDims = FIntVector(64, 64, 64);
+
+	//UFUNCTION(BlueprintCallable)
+		void SetLatticeDims(FIntVector newLatticeDims);
 
 	//UPROPERTY(BlueprintReadWrite, Category = Porous)
 		UInstancedStaticMeshComponent* PorousBoundariesMeshes;
 
-public:
 	// Sets default values for this pawn's properties
-	ALBMActor3D();
+	ALBMActor();
 
 
 protected:
@@ -48,7 +49,7 @@ protected:
 
 	//AmarettoFileManager* _amarettoTest;
 	int* porousDataArray;
-	int iteration = -1;
+	int currentIteration = -1;
 
 	// for test:
 	TArray<FLinearColor> uBuffer;

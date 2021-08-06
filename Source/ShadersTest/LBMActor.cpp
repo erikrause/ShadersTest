@@ -1,17 +1,15 @@
 PRAGMA_DISABLE_OPTIMIZATION
 
-#include "LBMActor3D.h"
+#include "LBMActor.h"
 #include "AmarettoFileManager.h"
 
-#include "Kismet/GameplayStatics.h"
-#include <Runtime/Engine/Classes/Kismet/KismetRenderingLibrary.h>
 #include "D3Q19CSManager.h"
-#include <Runtime/Engine/Classes/Engine/TextureRenderTargetVolume.h>
-#include <Runtime\Engine\Classes\Engine\VolumeTexture.h>
-#include <Runtime/Core/Public/PixelFormat.h>
+#include <Engine/TextureRenderTargetVolume.h>
+#include <Engine/VolumeTexture.h>
+#include <PixelFormat.h>
 
 // Sets default values
-ALBMActor3D::ALBMActor3D()
+ALBMActor::ALBMActor()
 {
  	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -20,7 +18,7 @@ ALBMActor3D::ALBMActor3D()
 
 	static_mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Static Mesh"));
 
-	FString projectDir = FPaths::ProjectDir();
+	FString projectDir = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
 	_amaretto = new AmarettoFileManager(projectDir + FString("/Porous/img, c0=22.5, c=23.4.amaretto"));	//("/Porous/cylinder64.amaretto"));// //cylinder.amaretto")); //XYZtest.amaretto"));
 	porousDataArray = _amaretto->GetPorousDataArray();
 
@@ -52,57 +50,54 @@ ALBMActor3D::ALBMActor3D()
 	//}
 }
 
+void ALBMActor::SetLatticeDims(FIntVector newLatticeDims)
+{
+	_latticeDims = newLatticeDims;
+}
+
 // Called when the game starts or when spawned
-void ALBMActor3D::BeginPlay()
+void ALBMActor::BeginPlay()
 {
 	Super::BeginPlay();
 
 	// Инициализация 3D текстуры для записи CS output в неё:
-	URenderTarget->OverrideFormat = PF_A32B32G32R32F;//PF_FloatRGB;
-	URenderTarget->SizeX = 64;
-	URenderTarget->SizeY = 64;
-	URenderTarget->SizeZ = 64;
+	URenderTarget->SizeX = _latticeDims.X;
+	URenderTarget->SizeY = _latticeDims.Y;
+	URenderTarget->SizeZ = _latticeDims.Z;
 	URenderTarget->bCanCreateUAV = true;
+	URenderTarget->OverrideFormat = PF_A32B32G32R32F;//PF_FloatRGB;
 	URenderTarget->UpdateResource();
 
 
-	//// Костыль: пришлось скопировать ссылку на текстуру в UVolumeTexture, т.к. у VolumeRenderTargetDataInterface в Niagara нету сэмплера.
-	////TODO: убрать в модуль шейдера, удалить "RenderCore" из зависимостей модуля ShaderTest
-	//ProbVolText->TextureReference = URenderTarget->TextureReference;
-	//ProbVolText->Resource = URenderTarget->Resource;
-
-
-
 	// Инициализация CS:
-	FD3Q19CSManager::Get()->InitResources(URenderTarget, ProbVolText, LatticeDims);
+	FD3Q19CSManager::Get()->InitResources(URenderTarget, _latticeDims);
 	FD3Q19CSManager::Get()->BeginRendering();
 
 
 	// TODO: try to use ENQUEUE_RENDER_COMMAND: https://coderoad.ru/59638346/%D0%9A%D0%B0%D0%BA-%D0%B2%D1%8B-%D0%B4%D0%B8%D0%BD%D0%B0%D0%BC%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8-%D0%BE%D0%B1%D0%BD%D0%BE%D0%B2%D0%BB%D1%8F%D0%B5%D1%82%D0%B5-UTextureRenderTarget2D-%D0%B2-C
 	// ИЛИ: try to get RHICmdList like here: https://github.com/runedegroot/UE4MarchingCubesGPU/blob/master/Plugins/MarchingCubesComputeShader/Source/MarchingCubesComputeShader/Private/MarchingCubesComputeHelper.cpp
-	//RenderTarget = UKismetRenderingLibrary::CreateRenderTarget2D(this, 11000, 512);	// try InitCustomFormat().
 }
 
-void ALBMActor3D::BeginDestroy()
+void ALBMActor::BeginDestroy()
 {
 	FD3Q19CSManager::Get()->EndRendering();
 	Super::BeginDestroy();
 }
 
 // Called every frame
-void ALBMActor3D::Tick(float DeltaTime)
+void ALBMActor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	iteration++;
-	if (iteration > 10)
+	currentIteration++;
+	if (currentIteration > MaxIterations)
 	{
-		iteration = 0;
+		currentIteration = 0;
 	}
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Iteration: %i"), iteration));
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Iteration: %i"), currentIteration));
 
 	//Update parameters
 	FD3Q19CSParameters parameters(URenderTarget, porousDataArray, _amaretto->Dims);
-	parameters.Iteration = iteration;
+	parameters.Iteration = currentIteration;
 	FD3Q19CSManager::Get()->UpdateParameters(parameters);
 
 	//if (URenderTarget != NULL)

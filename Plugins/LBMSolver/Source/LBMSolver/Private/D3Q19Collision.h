@@ -28,11 +28,14 @@ public:
 		//SHADER_PARAMETER_SRV(Texture2D<float>, F_in)
 		SHADER_PARAMETER_UAV(RWTexture3D<float>, F_out)
 		SHADER_PARAMETER_UAV(RWTexture3D<float3>, U)
+		SHADER_PARAMETER_UAV(RWTexture3D<float>, Density)
 		//SHADER_PARAMETER(float, Tau)
 		SHADER_PARAMETER(int, Iteration)
 		SHADER_PARAMETER(int, Nx)
 		SHADER_PARAMETER(int, Ny)
 		SHADER_PARAMETER(int, Nz)
+		SHADER_PARAMETER(float, Rho0)
+		SHADER_PARAMETER(float, DeltaTime)
 	END_SHADER_PARAMETER_STRUCT()
 
 public:

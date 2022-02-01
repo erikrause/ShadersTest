@@ -65,6 +65,13 @@ void ALBMActor3D::BeginPlay()
 	URenderTarget->bCanCreateUAV = true;
 	URenderTarget->UpdateResource();
 
+	DensityRenderTarget->OverrideFormat = PF_R32_FLOAT;//PF_FloatRGB;
+	DensityRenderTarget->SizeX = 64;
+	DensityRenderTarget->SizeY = 64;
+	DensityRenderTarget->SizeZ = 64;
+	DensityRenderTarget->bCanCreateUAV = true;
+	DensityRenderTarget->UpdateResource();
+
 
 	//// Костыль: пришлось скопировать ссылку на текстуру в UVolumeTexture, т.к. у VolumeRenderTargetDataInterface в Niagara нету сэмплера.
 	////TODO: убрать в модуль шейдера, удалить "RenderCore" из зависимостей модуля ShaderTest
@@ -74,7 +81,9 @@ void ALBMActor3D::BeginPlay()
 
 
 	// Инициализация CS:
-	FD3Q19CSManager::Get()->InitResources(URenderTarget, ProbVolText, LatticeDims);
+	URenderTarget->WaitForPendingInitOrStreaming();	// без этого GameThread_GetRenderTargetResource()->TextureRHI иногда возвращает NULL.
+	DensityRenderTarget->WaitForPendingInitOrStreaming();
+	FD3Q19CSManager::Get()->InitResources(URenderTarget, DensityRenderTarget, ProbVolText, LatticeDims);
 	FD3Q19CSManager::Get()->BeginRendering();
 
 
@@ -94,15 +103,17 @@ void ALBMActor3D::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	iteration++;
-	if (iteration > 10)
+	if (iteration > 2000)
 	{
 		iteration = 0;
 	}
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Iteration: %i"), iteration));
 
 	//Update parameters
-	FD3Q19CSParameters parameters(URenderTarget, porousDataArray, _amaretto->Dims);
+	FD3Q19CSParameters parameters(URenderTarget, porousDataArray, _amaretto->Dims, DensityRenderTarget);
 	parameters.Iteration = iteration;
+	//parameters.DeltaTime = DeltaTime;
+	//parameters.DeltaX = (0.000000016) / 64;	// TODO: add logic.
 	FD3Q19CSManager::Get()->UpdateParameters(parameters);
 
 	//if (URenderTarget != NULL)

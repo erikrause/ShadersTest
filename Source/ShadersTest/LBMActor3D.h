@@ -24,6 +24,9 @@ public:
 		class UTextureRenderTargetVolume* URenderTarget;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shader)
+		class UTextureRenderTargetVolume* DensityRenderTarget;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shader)
 		class UVolumeTexture* ProbVolText;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shader)
@@ -31,6 +34,9 @@ public:
 
 	//UPROPERTY(BlueprintReadWrite, Category = Porous)
 		UInstancedStaticMeshComponent* PorousBoundariesMeshes;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		int iteration = -1;
 
 public:
 	// Sets default values for this pawn's properties
@@ -48,7 +54,7 @@ protected:
 
 	//AmarettoFileManager* _amarettoTest;
 	int* porousDataArray;
-	int iteration = -1;
+
 
 	// for test:
 	TArray<FLinearColor> uBuffer;

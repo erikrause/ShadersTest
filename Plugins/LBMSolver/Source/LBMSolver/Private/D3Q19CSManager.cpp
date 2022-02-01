@@ -6,6 +6,8 @@
 #include "RenderTargetPool.h"
 #include "time.h"
 #include <Runtime\Engine\Classes\Engine\VolumeTexture.h>
+#include <D3Q19Solver.h>
+//#undef UpdateResource	// скрывыает максрос UpdateResource из Win Toolkit
 
 #include "Modules/ModuleManager.h"
 
@@ -14,8 +16,15 @@
 //Static members
 FD3Q19CSManager* FD3Q19CSManager::instance = nullptr;
 
-void FD3Q19CSManager::InitResources(UTextureRenderTargetVolume* UTextureRenderTargetVolume, UVolumeTexture* probVolText, FIntVector latticeDims, LbmPrecision lbmPrecision)
+void FD3Q19CSManager::InitResources(UTextureRenderTargetVolume* VelocityTexture, UTextureRenderTargetVolume* densityTexture, UVolumeTexture* probVolText, FIntVector latticeDims, LbmPrecision lbmPrecision)
 {
+	//const int size = 5;
+	//const int a[size] = { 1, 2, 3, 4, 5 };
+	//const int b[size] = { 10, 20, 30, 40, 50 };
+	//int c[size] = { 0 };
+
+	//LBM::D3Q19Solver::AddTest(a, b, c, size);
+	// 
 	// TODO: create UAV from URenderTarget:	auto bprob = cachedParams.URenderTarget->bCanCreateUAV;
 
 	//https://answers.unrealengine.com/questions/805711/write-texture2drhi-or-uav-to-render-target.html
@@ -28,13 +37,17 @@ void FD3Q19CSManager::InitResources(UTextureRenderTargetVolume* UTextureRenderTa
 	FOutputTexture_UAV = RHICreateUnorderedAccessView(FOutputTexture);
 	FOutputTexture_SRV = RHICreateShaderResourceView(FOutputTexture, FRHITextureSRVCreateInfo());
 
-	check(UTextureRenderTargetVolume->bCanCreateUAV);
+	check(VelocityTexture->bCanCreateUAV);
 	////UOutputTexture = RHICreateTexture3D(latticeDims.X, latticeDims.Y, latticeDims.Z, EPixelFormat::PF_R32_FLOAT, 1, TexCreate_ShaderResource | TexCreate_UAV, resourceCreateInfo);
-	UOutputTexture = UTextureRenderTargetVolume->GameThread_GetRenderTargetResource()->TextureRHI.GetReference()->GetTexture3D();
+	UOutputTexture = VelocityTexture->GameThread_GetRenderTargetResource()->TextureRHI.GetReference()->GetTexture3D();
 	UOutputTexture_UAV = RHICreateUnorderedAccessView(UOutputTexture);
 
-	//UTextureRenderTargetVolume->GetRenderTargetResource()->TextureRHI;
-	ProbVolTexRHI = probVolText->Resource->TextureRHI;//GetRenderTargetResource()->TextureRHI
+	check(densityTexture->bCanCreateUAV);
+	DensityOutputTexture = densityTexture->GameThread_GetRenderTargetResource()->TextureRHI.GetReference()->GetTexture3D();
+	DensityOutputTexture_UAV = RHICreateUnorderedAccessView(DensityOutputTexture);
+
+	//VelocityTexture->GetRenderTargetResource()->TextureRHI;
+	ProbVolTexRHI = probVolText->Resource->TextureRHI;//GetRenderTargetResource()->TextureRHI	// TODO: delete.
 }
 
 //Begin the execution of the compute shader each frame
@@ -130,6 +143,7 @@ void FD3Q19CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList,
 	//Specify the resource transition, we're executing this in post scene rendering so we set it to Graphics to Compute
 	RHICmdList.TransitionResource(EResourceTransitionAccess::ERWBarrier, EResourceTransitionPipeline::EGfxToCompute, FOutputTexture_UAV);		// TODO: проверить работоспособность без этих строк.
 	RHICmdList.TransitionResource(EResourceTransitionAccess::ERWBarrier, EResourceTransitionPipeline::EGfxToCompute, UOutputTexture_UAV);
+	RHICmdList.TransitionResource(EResourceTransitionAccess::ERWBarrier, EResourceTransitionPipeline::EGfxToCompute, DensityOutputTexture_UAV);
 
 	// CREATE THE SAMPLER STATE RHI RESOURCE.
 	//ESamplerAddressMode SamplerAddressMode = Owner->SamplerAddressMode;
@@ -152,7 +166,7 @@ void FD3Q19CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList,
 	DriftCSParameters.F_SamplerState = RHICreateSamplerState(SamplerStateInitializer);
 	DriftCSParameters.F_in = FInputTexture.GetReference();	// FPooledRenderTarget.GetReference()->GetRenderTargetItem().ShaderResourceTexture;
 	DriftCSParameters.F_out = FOutputTexture_UAV;	// TODO: for UAV try bind.
-	DriftCSParameters.Rho0 = 100;
+	DriftCSParameters.Rho0 = 1;
 	DriftCSParameters.Iteration = cachedParams.Iteration;
 	//DriftCSParameters.Tau = 0.6;
 	DriftCSParameters.Nx = cachedParams.GetLatticeDims().X;
@@ -163,7 +177,10 @@ void FD3Q19CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList,
 	FD3Q19CSCollision::FParameters CollisionCSParameters;
 	CollisionCSParameters.F_in = FInputTexture.GetReference();	// FPooledRenderTarget->GetRenderTargetItem().ShaderResourceTexture;
 	CollisionCSParameters.F_out = FOutputTexture_UAV;
+	CollisionCSParameters.Rho0 = 1;
 	CollisionCSParameters.Iteration = cachedParams.Iteration;
+	CollisionCSParameters.Density = DensityOutputTexture_UAV;
+	//CollisionCSParameters.DeltaTime = cachedParams.DeltaTime;	// TODO: add.
 	CollisionCSParameters.Nx = cachedParams.GetLatticeDims().X;
 	CollisionCSParameters.Ny = cachedParams.GetLatticeDims().Y;
 	CollisionCSParameters.Nz = cachedParams.GetLatticeDims().Z;

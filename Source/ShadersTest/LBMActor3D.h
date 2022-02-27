@@ -46,6 +46,7 @@ public:
 protected:
 
 	class AmarettoFileManager* _amaretto;
+	class D3Q19SolverInterlayer* _solverInterlayer;
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

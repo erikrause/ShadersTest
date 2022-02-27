@@ -79,7 +79,7 @@ void Main(uint3 DTid : SV_DispatchThreadID)
     //const int x_tex = DTid.x;
     //const int y_tex = DTid.y * Q; // масштабируем Y {0..100} -> Y {0..900}, т.к. в одном узле сетки надо хранить 9 значений скорости (для каждого направления).
     
-    float3 u = float3(0, 0, 0);
+    //float3 u = float3(0, 0, 0);
     
     if (Iteration == 0)
     {

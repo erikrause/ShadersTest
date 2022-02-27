@@ -6,8 +6,6 @@
 #include "RenderTargetPool.h"
 #include "time.h"
 #include <Runtime\Engine\Classes\Engine\VolumeTexture.h>
-#include <D3Q19Solver.h>
-//#undef UpdateResource	// скрывыает максрос UpdateResource из Win Toolkit
 
 #include "Modules/ModuleManager.h"
 
@@ -18,13 +16,6 @@ FD3Q19CSManager* FD3Q19CSManager::instance = nullptr;
 
 void FD3Q19CSManager::InitResources(UTextureRenderTargetVolume* VelocityTexture, UTextureRenderTargetVolume* densityTexture, UVolumeTexture* probVolText, FIntVector latticeDims, LbmPrecision lbmPrecision)
 {
-	//const int size = 5;
-	//const int a[size] = { 1, 2, 3, 4, 5 };
-	//const int b[size] = { 10, 20, 30, 40, 50 };
-	//int c[size] = { 0 };
-
-	//LBM::D3Q19Solver::AddTest(a, b, c, size);
-	// 
 	// TODO: create UAV from URenderTarget:	auto bprob = cachedParams.URenderTarget->bCanCreateUAV;
 
 	//https://answers.unrealengine.com/questions/805711/write-texture2drhi-or-uav-to-render-target.html

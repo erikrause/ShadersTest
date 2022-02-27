@@ -2,6 +2,8 @@ PRAGMA_DISABLE_OPTIMIZATION
 
 #include "LBMActor3D.h"
 #include "AmarettoFileManager.h"
+#include "D3Q19SolverInterlayer.h"
+#undef UpdateResource
 
 #include "Kismet/GameplayStatics.h"
 #include <Runtime/Engine/Classes/Kismet/KismetRenderingLibrary.h>
@@ -57,6 +59,7 @@ void ALBMActor3D::BeginPlay()
 {
 	Super::BeginPlay();
 
+
 	// Инициализация 3D текстуры для записи CS output в неё:
 	URenderTarget->OverrideFormat = PF_A32B32G32R32F;//PF_FloatRGB;
 	URenderTarget->SizeX = 64;
@@ -80,11 +83,14 @@ void ALBMActor3D::BeginPlay()
 
 
 
-	// Инициализация CS:
+	//// Инициализация CS:
 	URenderTarget->WaitForPendingInitOrStreaming();	// без этого GameThread_GetRenderTargetResource()->TextureRHI иногда возвращает NULL.
-	DensityRenderTarget->WaitForPendingInitOrStreaming();
-	FD3Q19CSManager::Get()->InitResources(URenderTarget, DensityRenderTarget, ProbVolText, LatticeDims);
-	FD3Q19CSManager::Get()->BeginRendering();
+	//DensityRenderTarget->WaitForPendingInitOrStreaming();
+	//FD3Q19CSManager::Get()->InitResources(URenderTarget, DensityRenderTarget, ProbVolText, LatticeDims);
+	//FD3Q19CSManager::Get()->BeginRendering();
+
+
+	_solverInterlayer = new D3Q19SolverInterlayer(URenderTarget, porousDataArray, FIntVector(16, 16, 1));
 
 
 	// TODO: try to use ENQUEUE_RENDER_COMMAND: https://coderoad.ru/59638346/%D0%9A%D0%B0%D0%BA-%D0%B2%D1%8B-%D0%B4%D0%B8%D0%BD%D0%B0%D0%BC%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8-%D0%BE%D0%B1%D0%BD%D0%BE%D0%B2%D0%BB%D1%8F%D0%B5%D1%82%D0%B5-UTextureRenderTarget2D-%D0%B2-C
@@ -109,12 +115,15 @@ void ALBMActor3D::Tick(float DeltaTime)
 	}
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Iteration: %i"), iteration));
 
-	//Update parameters
-	FD3Q19CSParameters parameters(URenderTarget, porousDataArray, _amaretto->Dims, DensityRenderTarget);
-	parameters.Iteration = iteration;
-	//parameters.DeltaTime = DeltaTime;
-	//parameters.DeltaX = (0.000000016) / 64;	// TODO: add logic.
-	FD3Q19CSManager::Get()->UpdateParameters(parameters);
+	////Update parameters
+	//FD3Q19CSParameters parameters(URenderTarget, porousDataArray, _amaretto->Dims, DensityRenderTarget);
+	//parameters.Iteration = iteration;
+	////parameters.DeltaTime = DeltaTime;
+	////parameters.DeltaX = (0.000000016) / 64;	// TODO: add logic.
+	//FD3Q19CSManager::Get()->UpdateParameters(parameters);
+
+	_solverInterlayer->Step();
+
 
 	//if (URenderTarget != NULL)
 	//{

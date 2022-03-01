@@ -6,7 +6,6 @@
 #include <Runtime\Windows\D3D11RHI\Public\D3D11Resources.h>
 //#include <cuda_d3d11_interop.h>
 //#include <helper_cuda.h>
-#include "D3Q19SolverCUDA.h"
 #include <d3d11.h>
 
 

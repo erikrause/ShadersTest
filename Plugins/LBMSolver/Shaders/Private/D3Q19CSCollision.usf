@@ -1,4 +1,4 @@
-#pragma enable_d3d11_debug_symbols
+п»ї#pragma enable_d3d11_debug_symbols
 
 #include "/Engine/Public/Platform.ush"
 
@@ -6,22 +6,21 @@
 
 #define ZERO_MIP 0
 
-static float DeltaU = 0.001102;
 static float Tau = 2.6;
 int Iteration;
 
-Texture3D<float> F_in;     // F with current t
-RWTexture3D<float> F_out;  // t + 1
-RWTexture3D<float3> U;      // output velocity
-RWTexture3D<float> Density;
-
-static float Rho0_solid = 1; //2.65;
-//static float g = 9.8;   // Gravitational acceleration constant (m/s^2).
-static float g_lattice = 0.9346 * pow(10, -24); // Gravitational acceleration constant in lattice units (dx/dt^2). This force was converted from 9.8 m/s^2 with dx_p / dx = 1.6 * 10^8 and dt_p / dt = (dx_p / dx) ^2 = 2.56 * 10^-16.
-//float DeltaTime = 1;
+Texture3D<float> F_in; // F with current t
+RWTexture3D<float> F_out; // t + 1
+RWTexture3D<float3> U; // output velocity
+StructuredBuffer<int> PorousData;
 //RWTexture2D<float> PorousTarget;
 
-float getCellRho(float f[Q])
+bool isBoundary(uint3 cellId)
+{
+    return PorousData[cellId.x + cellId.y * Nx + cellId.z * Nx * Ny] == 0;
+}
+
+float getLocalRho(float f[Q])
 {
     float rho = 0;
     for (int i = 0; i < Q; i++)
@@ -30,97 +29,6 @@ float getCellRho(float f[Q])
     }
     
     return rho;
-}
-
-// Return pseudopotential for current density [T. Kruger et al. The Lattice Boltzmann Method Principles and Practice. eq 9.102].
-float getPseudoPsi(float rho)     // TODO: try inline/lambda.
-{
-    return Rho0 * (1 - exp(-rho / Rho0));
-}
-
-float getNeighborCellRho(const uint3 x)
-{
-    float f[Q];
-    int i;
-    for (i= 0; i < Q; i++)
-    {
-        f[i] = F_in[uint3(x.x, x.y, x.z * Q + i)];
-    }
-    
-    float rho = 0;
-    for (i = 0; i < Q; i++)
-    {
-        rho += f[i];
-    }
-    
-    return rho;
-}
-
-float getGreenFunction()
-{
-    return -0.5; //    (-4 * (1 - weights[0])) / (Q * Rho0);
-}
-
-// Calculates Shan-Chen force for multiphase flow with boundary condition [T. Kruger et al. The Lattice Boltzmann Method Principles and Practice. eq. 9.105 & eq. 9.116]. deltaT = 1.
-float3 getForceSC(const uint3 x, float rho)
-{
-    float3 force_SC;
-    
-    // Sum part:
-    for (int i = 0; i < Q; i++)
-    {
-        int3 c_i = int3(cxs[i], cys[i], czs[i]);
-        int3 x_neigbour = int3(x.x + c_i.x, x.y + c_i.y, x.z + c_i.z); // TODO: сделать проверку на выход за границы.
-        float rho_neighbour = 0;
-        
-        if (isBoundary(x_neigbour))
-        {
-            rho_neighbour = Rho0_solid;
-        }
-        else
-        {
-            rho_neighbour = getNeighborCellRho(x_neigbour);
-        }
-        
-        force_SC += weights[i] * getPseudoPsi(rho_neighbour) * c_i;
-    }
-    
-    float psi = getPseudoPsi(rho);
-    float G = getGreenFunction();       // TODO: Add G_ff and G_sf.
-    return -psi * G * force_SC;   
-}
-
-// Return gravity force in lattice units. Rho is cell rho.
-float3 getGravityForce(float rho)
-{
-    return rho * float3(0, 0, g_lattice);
-}
-
-float3 getVelocity(float f[Q], float rho, float3 force)
-{
-    float3 u = float3(0, 0, 0);
-    //for (int i = 0; i < Q; i++)
-    //{
-    //    float3 e = float3(cxs[i], cys[i], czs[i]);
-    //    u += f[i] * e;
-    //}
-    //u /= rho;
-    //return u;
-    
-    for (int i = 0; i < Q; i++)
-    {
-        float3 c = float3(cxs[i], cys[i], czs[i]);
-        u += f[i] * c + force / 2;
-    }
-    u /= rho;
-    return u;
-}
-
-
-// Реализация EDM (метод точной разности) для объемных сил [Куперштох А. Л. Учет действия объемных сил в решеточных уравнениях. Вестник НГУ (2004)].
-float deltaF_eq(const uint3 x, int i)
-{
-    //TODO: реализовать.
 }
 
 [numthreads(THREADGROUPSIZE_X, THREADGROUPSIZE_Y, THREADGROUPSIZE_Z)]
@@ -128,20 +36,20 @@ void Main(uint3 DTid : SV_DispatchThreadID)
 {
     // INIT:
     uint i; // for iterator.
-    // Координаты текущей ячейки рассчетной сетки LBM: 
+    // ГЉГ®Г®Г°Г¤ГЁГ­Г ГІГ» ГІГҐГЄГіГ№ГҐГ© ГїГ·ГҐГ©ГЄГЁ Г°Г Г±Г±Г·ГҐГІГ­Г®Г© Г±ГҐГІГЄГЁ LBM: 
     const uint3 cellId = DTid;
     
-    // Текстурные координаты (2D): в одном потоке мы обрабатываем все направления скоростей, поэтому расширяем "y" в тестуре F.
+    // Г’ГҐГЄГ±ГІГіГ°Г­Г»ГҐ ГЄГ®Г®Г°Г¤ГЁГ­Г ГІГ» (2D): Гў Г®Г¤Г­Г®Г¬ ГЇГ®ГІГ®ГЄГҐ Г¬Г» Г®ГЎГ°Г ГЎГ ГІГ»ГўГ ГҐГ¬ ГўГ±ГҐ Г­Г ГЇГ°Г ГўГ«ГҐГ­ГЁГї Г±ГЄГ®Г°Г®Г±ГІГҐГ©, ГЇГ®ГЅГІГ®Г¬Гі Г°Г Г±ГёГЁГ°ГїГҐГ¬ "y" Гў ГІГҐГ±ГІГіГ°ГҐ F.
     //const uint3 fTexCoord = uint3(DTid.x, DTid.y, DTid.z * Q);
     //const int x_tex_u = DTid.x;
     //const int y_tex_u = DTid.y;
     //const int x_tex_f = DTid.x;
-    //const int y_tex_f = DTid.y * Q; // масштабируем Y {0..100} -> Y {0..900}, т.к. в одном узле сетки надо хранить 19 значений скорости (для каждого нарпавления).
+    //const int y_tex_f = DTid.y * Q; // Г¬Г Г±ГёГІГ ГЎГЁГ°ГіГҐГ¬ Y {0..100} -> Y {0..900}, ГІ.ГЄ. Гў Г®Г¤Г­Г®Г¬ ГіГ§Г«ГҐ Г±ГҐГІГЄГЁ Г­Г Г¤Г® ГµГ°Г Г­ГЁГІГј 19 Г§Г­Г Г·ГҐГ­ГЁГ© Г±ГЄГ®Г°Г®Г±ГІГЁ (Г¤Г«Гї ГЄГ Г¦Г¤Г®ГЈГ® Г­Г Г°ГЇГ ГўГ«ГҐГ­ГЁГї).
     
     float3 u = float3(0, 0, 0);
     
         
-    /* Копирование из глобальной памяти в локальную */
+    /* ГЉГ®ГЇГЁГ°Г®ГўГ Г­ГЁГҐ ГЁГ§ ГЈГ«Г®ГЎГ Г«ГјГ­Г®Г© ГЇГ Г¬ГїГІГЁ Гў Г«Г®ГЄГ Г«ГјГ­ГіГѕ */
     float f[Q];
     for (i = 0; i < Q; i++)
     {
@@ -153,17 +61,18 @@ void Main(uint3 DTid : SV_DispatchThreadID)
     //COLLISION:
     if (!isBoundary(cellId)) //((pow((x - Nx / 4), 2) + pow((y - Ny / 2), 2)) < pow((Ny / 4), 2))
     {
-        float rho = getCellRho(f);
+        float rho = getLocalRho(f);
         
-        float3 force_SC = getForceSC(cellId, rho);   // CHECK: is force is scalar?
-        float3 force = force_SC;    // + getGravityForce(rho);
-        
-        
-        u = getVelocity(f, rho, force);
+        for (i = 0; i < Q; i++)
+        {
+            float3 e = float3(cxs[i], cys[i], czs[i]);
+            u += f[i] * e;
+        }
+        u /= rho;
     
         
         float f_eq[Q];
-        float3 unit = float3(1, 1, 1); // единичный вектор.
+        float3 unit = float3(1, 1, 1); // ГҐГ¤ГЁГ­ГЁГ·Г­Г»Г© ГўГҐГЄГІГ®Г°.
         for (i = 0; i < Q; i++)
         {
             float3 e = float3(cxs[i], cys[i], czs[i]); // lattice direction.
@@ -171,10 +80,8 @@ void Main(uint3 DTid : SV_DispatchThreadID)
             f_eq[i] = rho * weights[i] * (1 + 3 * dot(e * u, unit) +
                                    9 * pow(dot(e * u, unit), 2) / 2 -
                                    3 * dot(pow(u, 2), unit) / 2); // TODO: test 3D.
-            f[i] += -(1.0 / Tau) * (f[i] - f_eq[i]);    // + deltaF_eq(cellId, i);
+            f[i] += -(1.0 / Tau) * (f[i] - f_eq[i]);
         }
-        
-        Density[cellId] = rho;
     }
         
     
@@ -193,7 +100,7 @@ void Main(uint3 DTid : SV_DispatchThreadID)
     //U[uint3(cellId.x, cellId.y, cellId.z)] = (float)cellId.x / 64;
     
 
-    //// POROUS BOIUNDARIES OUT: - TODO: сделать через дискретное преобразование Лапласа.
+    //// POROUS BOIUNDARIES OUT: - TODO: Г±Г¤ГҐГ«Г ГІГј Г·ГҐГ°ГҐГ§ Г¤ГЁГ±ГЄГ°ГҐГІГ­Г®ГҐ ГЇГ°ГҐГ®ГЎГ°Г Г§Г®ГўГ Г­ГЁГҐ Г‹Г ГЇГ«Г Г±Г .
     //if (Iteration == 1 && isBoundary(x, y, z))
     //{
     //    PorousTarget[int2(x_tex_u, y_tex_u)] = 0;

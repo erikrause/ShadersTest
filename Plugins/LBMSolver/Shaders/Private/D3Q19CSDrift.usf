@@ -1,15 +1,24 @@
-#pragma enable_d3d11_debug_symbols
+п»ї#pragma enable_d3d11_debug_symbols
 
 #include "/Engine/Public/Platform.ush"
 
 #include "D3Q19CSDefinitions.usf"
 
+float Rho0; // = 100; // average density
 int Iteration;
 
-Texture3D<float> F_in;     // F with current t
-RWTexture3D<float> F_out;  // t + 1
+Texture3D<float> F_in; // F with current t
+RWTexture3D<float> F_out; // t + 1
+StructuredBuffer<int> PorousData;
 
-SamplerState F_SamplerState;    // не используется.
+SamplerState F_SamplerState; // Г­ГҐ ГЁГ±ГЇГ®Г«ГјГ§ГіГҐГІГ±Гї.
+
+bool isBoundary(const uint3 cellId)
+{
+    return PorousData[cellId.x + cellId.y * Nx + cellId.z * Nx * Ny] == 0;
+    //return x == 0 || x == 63 || y == 0 || y == 63 || z == 0 || z == 63;
+    //return ((pow((x - Nx / 4), 2) + pow((y - Ny / 2), 2)) < pow((Ny / 4), 2)); // || (x==62 || x==63);
+}
 
 void initArray(const uint3 cellId)
 {
@@ -18,16 +27,16 @@ void initArray(const uint3 cellId)
     {
         F_out[uint3(cellId.x, cellId.y, cellId.z * Q + i)] = 1;
     }
-    // TODO: F_out[x][y] += rand;   - (добавить флуктуации)
+    // TODO: F_out[x][y] += rand;   - (Г¤Г®ГЎГ ГўГЁГІГј ГґГ«ГіГЄГІГіГ Г¶ГЁГЁ)
         
         
-    // Задаем направление потока по направлению (1, 0, 0):
-    //F_out[uint3(cellId.x, cellId.y, cellId.z * Q + 1)] += 2 * (1 + 0.2 * cos(2 * PI * cellId.x / Nx * 4));
+    // Г‡Г Г¤Г ГҐГ¬ Г­Г ГЇГ°Г ГўГ«ГҐГ­ГЁГҐ ГЇГ®ГІГ®ГЄГ  ГЇГ® Г­Г ГЇГ°Г ГўГ«ГҐГ­ГЁГѕ (1, 0, 0):
+    F_out[uint3(cellId.x, cellId.y, cellId.z * Q + 1)] += 2 * (1 + 0.2 * cos(2 * PI * cellId.x / Nx * 4));
         
     
     
-    // Нормализуем распределение направлений частиц по глобальной плотности:
-    float rho = 0; // текущая локальная плотность.
+    // ГЌГ®Г°Г¬Г Г«ГЁГ§ГіГҐГ¬ Г°Г Г±ГЇГ°ГҐГ¤ГҐГ«ГҐГ­ГЁГҐ Г­Г ГЇГ°Г ГўГ«ГҐГ­ГЁГ© Г·Г Г±ГІГЁГ¶ ГЇГ® ГЈГ«Г®ГЎГ Г«ГјГ­Г®Г© ГЇГ«Г®ГІГ­Г®Г±ГІГЁ:
+    float rho = 0; // ГІГҐГЄГіГ№Г Гї Г«Г®ГЄГ Г«ГјГ­Г Гї ГЇГ«Г®ГІГ­Г®Г±ГІГј.
     for (i = 0; i < Q; i++)
     {
         rho += F_out[uint3(cellId.x, cellId.y, cellId.z * Q + i)];
@@ -38,30 +47,12 @@ void initArray(const uint3 cellId)
     }
         
         
-    // Граничное условие:
+    // ГѓГ°Г Г­ГЁГ·Г­Г®ГҐ ГіГ±Г«Г®ГўГЁГҐ:
     if (isBoundary(cellId)) //((pow((x - Nx / 4), 2) + pow((y - Ny / 2), 2)) < pow((Ny / 4), 2))   //  (x > 0 && x < 3 && y > -1 && y < 2)
     {
         for (i = 0; i < Q; i++)
         {
-            F_out[uint3(cellId.x, cellId.y, cellId .z * Q + i)] = 0;
-        }
-    }
-    
-    // Инициализация ячеек с газом:
-    rho = 0;
-    if (cellId.z < 32)
-    {
-        for (int i = 0; i < Q; i++)
-        {
-            F_out[uint3(cellId.x, cellId.y, cellId.z * Q + i)] = 1;
-        }
-        for (i = 0; i < Q; i++)
-        {
-            rho += F_out[uint3(cellId.x, cellId.y, cellId.z * Q + i)];
-        }
-        for (i = 0; i < Q; i++)
-        {
-            F_out[uint3(cellId.x, cellId.y, cellId.z * Q + i)] *= Rho0_gas / rho;
+            F_out[uint3(cellId.x, cellId.y, cellId.z * Q + i)] = 0;
         }
     }
 }
@@ -72,18 +63,18 @@ void Main(uint3 DTid : SV_DispatchThreadID)
 {
     // INIT:
     int i; // for iterator.
-    // Координаты рассчетной сетки LBM:
+    // ГЉГ®Г®Г°Г¤ГЁГ­Г ГІГ» Г°Г Г±Г±Г·ГҐГІГ­Г®Г© Г±ГҐГІГЄГЁ LBM:
     const uint3 cellId = DTid;
     
-    //// Текстурные координаты (2D): в одном потоке мы обрабатываем все направления скоростей, поэтому расширяем y в тестуре.
+    //// Г’ГҐГЄГ±ГІГіГ°Г­Г»ГҐ ГЄГ®Г®Г°Г¤ГЁГ­Г ГІГ» (2D): Гў Г®Г¤Г­Г®Г¬ ГЇГ®ГІГ®ГЄГҐ Г¬Г» Г®ГЎГ°Г ГЎГ ГІГ»ГўГ ГҐГ¬ ГўГ±ГҐ Г­Г ГЇГ°Г ГўГ«ГҐГ­ГЁГї Г±ГЄГ®Г°Г®Г±ГІГҐГ©, ГЇГ®ГЅГІГ®Г¬Гі Г°Г Г±ГёГЁГ°ГїГҐГ¬ y Гў ГІГҐГ±ГІГіГ°ГҐ.
     //const int x_tex = DTid.x;
-    //const int y_tex = DTid.y * Q; // масштабируем Y {0..100} -> Y {0..900}, т.к. в одном узле сетки надо хранить 9 значений скорости (для каждого направления).
+    //const int y_tex = DTid.y * Q; // Г¬Г Г±ГёГІГ ГЎГЁГ°ГіГҐГ¬ Y {0..100} -> Y {0..900}, ГІ.ГЄ. Гў Г®Г¤Г­Г®Г¬ ГіГ§Г«ГҐ Г±ГҐГІГЄГЁ Г­Г Г¤Г® ГµГ°Г Г­ГЁГІГј 9 Г§Г­Г Г·ГҐГ­ГЁГ© Г±ГЄГ®Г°Г®Г±ГІГЁ (Г¤Г«Гї ГЄГ Г¦Г¤Г®ГЈГ® Г­Г ГЇГ°Г ГўГ«ГҐГ­ГЁГї).
     
-    //float3 u = float3(0, 0, 0);
+    float3 u = float3(0, 0, 0);
     
     if (Iteration == 0)
     {
-        initArray(cellId);   // TODO: init outside the shader.
+        initArray(cellId); // TODO: init outside the shader.
     }
     
     float f[Q];
@@ -104,8 +95,8 @@ void Main(uint3 DTid : SV_DispatchThreadID)
     
     // Drift particles to neighbours (with indexing):
     for (int neighbour_id = 0; neighbour_id < Q; neighbour_id++)
-    {       
-        int3 neighbour = int3((int3) cellId - int3(cxs[neighbour_id], cys[neighbour_id], czs[neighbour_id])); // TODO: убрать преобразование из uint3 в int3.
+    {
+        int3 neighbour = int3((int3) cellId - int3(cxs[neighbour_id], cys[neighbour_id], czs[neighbour_id])); // TODO: ГіГЎГ°Г ГІГј ГЇГ°ГҐГ®ГЎГ°Г Г§Г®ГўГ Г­ГЁГҐ ГЁГ§ uint3 Гў int3.
         neighbour = closeField(neighbour);
         
         //f[neighbour_id] = F_in[uint2(neighbour.x + neighbour.z * Nx, neighbour_y_tex + neighbour_id)];

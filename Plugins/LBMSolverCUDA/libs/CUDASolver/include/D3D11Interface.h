@@ -29,11 +29,12 @@ namespace CFD
 		int* _devPorousMedia;
 		ILogger* _logger;
 		CUDAErrorChecker* _cudaErrorChecker;
+		cudaArray_t _velocity;
 		cudaArray_t _latticeGridIn;
 		cudaArray_t _latticeGridOut;
+		cudaSurfaceObject_t _velocitySurf = 0;
 		cudaSurfaceObject_t _latticeGridInSurf = 0;
 		cudaSurfaceObject_t _latticeGridOutSurf = 0;
-
 		
 
 		int _iteration = 0;

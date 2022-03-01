@@ -9,7 +9,7 @@
 #include <d3d11.h>
 
 
-D3Q19SolverInterlayer::D3Q19SolverInterlayer(UTextureRenderTargetVolume* velocityTexture, int* porousMedia, FIntVector blockSize)
+D3Q19SolverInterlayer::D3Q19SolverInterlayer(UTextureRenderTargetVolume* velocityTexture, FIntVector blockSize)
 {
 	//_blockSize = blockSize;
 	//_gridSize = ((VelocityTexture->SizeX + blockSize.x - 1) / blockSize.x, (VelocityTexture->SizeY + blockSize.y - 1) / blockSize.y, 1);
@@ -80,7 +80,7 @@ D3Q19SolverInterlayer::D3Q19SolverInterlayer(UTextureRenderTargetVolume* velocit
 	_textureUE = velocityTexture;
 	dim3 resolution = dim3(velocityTexture->SizeX, velocityTexture->SizeY, velocityTexture->SizeZ);
 	_logger = new UnrealCUDALogger();
-	_cudaSolver = new CFD::D3D11Interface(_texture, porousMedia, resolution, blockSizeDims, _logger);
+	_cudaSolver = new CFD::D3D11Interface(_texture, resolution, blockSizeDims, _logger);
 }
 
 D3Q19SolverInterlayer::~D3Q19SolverInterlayer()
@@ -98,4 +98,9 @@ void D3Q19SolverInterlayer::Step()
 		{
 			_cudaSolver->Step();
 		});	
+}
+
+void D3Q19SolverInterlayer::InitializeData(const int* porousMedia)
+{
+	_cudaSolver->InitializeData(porousMedia);
 }

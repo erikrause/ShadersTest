@@ -90,7 +90,7 @@ void ALBMActor3D::BeginPlay()
 	//FD3Q19CSManager::Get()->BeginRendering();
 
 
-	_solverInterlayer = new D3Q19SolverInterlayer(URenderTarget, porousDataArray, FIntVector(16, 16, 1));
+	_solverInterlayer = new D3Q19SolverInterlayer(URenderTarget, FIntVector(16, 16, 1));
 
 
 	// TODO: try to use ENQUEUE_RENDER_COMMAND: https://coderoad.ru/59638346/%D0%9A%D0%B0%D0%BA-%D0%B2%D1%8B-%D0%B4%D0%B8%D0%BD%D0%B0%D0%BC%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8-%D0%BE%D0%B1%D0%BD%D0%BE%D0%B2%D0%BB%D1%8F%D0%B5%D1%82%D0%B5-UTextureRenderTarget2D-%D0%B2-C
@@ -109,9 +109,10 @@ void ALBMActor3D::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	iteration++;
-	if (iteration > 2000)
+	if (iteration > 10)
 	{
 		iteration = 0;
+		_solverInterlayer->InitializeData(porousDataArray);
 	}
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Iteration: %i"), iteration));
 

@@ -13,9 +13,11 @@ namespace CFD
 	{
 	public:
 
-		D3D11Interface(ID3D11Texture3D* velocityTexture, const int* porousMedia, const dim3 resolution, const dim3 blockSize, ILogger* logger);
+		D3D11Interface(ID3D11Texture3D* velocityTexture, const dim3 resolution, const dim3 blockSize, ILogger* logger);
 		~D3D11Interface();
 		void Step();
+
+		void InitializeData(const int* porousMedia);
 
 	protected:
 

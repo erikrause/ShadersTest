@@ -156,7 +156,7 @@ void Main(uint3 DTid : SV_DispatchThreadID)
         float rho = getCellRho(f);
         
         float3 force_SC = getForceSC(cellId, rho);   // CHECK: is force is scalar?
-        float3 force = force_SC;    // + getGravityForce(rho);
+        float3 force = getGravityForce(rho);    //force_SC;    // + getGravityForce(rho);
         
         
         u = getVelocity(f, rho, force);

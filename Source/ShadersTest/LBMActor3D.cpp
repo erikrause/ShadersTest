@@ -20,8 +20,6 @@ ALBMActor3D::ALBMActor3D()
 	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 	RootComponent = Root;
 
-	static_mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Static Mesh"));
-
 	FString projectDir = FPaths::ProjectDir();
 	_amaretto = new AmarettoFileManager(projectDir + FString("/Porous/img, c0=22.5, c=23.4.amaretto"));	//("/Porous/cylinder64.amaretto"));// //cylinder.amaretto")); //XYZtest.amaretto"));
 	porousDataArray = _amaretto->GetPorousDataArray();
@@ -60,7 +58,7 @@ void ALBMActor3D::BeginPlay()
 	Super::BeginPlay();
 
 
-	// Инициализация 3D текстуры для записи CS output в неё:
+	// Инициализация 3D текстуры для записи данных solver output в неё:
 	URenderTarget->OverrideFormat = PF_A32B32G32R32F;//PF_FloatRGB;
 	URenderTarget->SizeX = 64;
 	URenderTarget->SizeY = 64;
@@ -78,9 +76,6 @@ void ALBMActor3D::BeginPlay()
 
 	//// Костыль: пришлось скопировать ссылку на текстуру в UVolumeTexture, т.к. у VolumeRenderTargetDataInterface в Niagara нету сэмплера.
 	////TODO: убрать в модуль шейдера, удалить "RenderCore" из зависимостей модуля ShaderTest
-	//ProbVolText->TextureReference = URenderTarget->TextureReference;
-	//ProbVolText->Resource = URenderTarget->Resource;
-
 
 
 	//// Инициализация CS:
@@ -91,6 +86,7 @@ void ALBMActor3D::BeginPlay()
 
 
 	_solverInterlayer = new D3Q19SolverInterlayer(URenderTarget, FIntVector(16, 16, 1));
+	_solverInterlayer->InitializeData(porousDataArray);
 
 
 	// TODO: try to use ENQUEUE_RENDER_COMMAND: https://coderoad.ru/59638346/%D0%9A%D0%B0%D0%BA-%D0%B2%D1%8B-%D0%B4%D0%B8%D0%BD%D0%B0%D0%BC%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8-%D0%BE%D0%B1%D0%BD%D0%BE%D0%B2%D0%BB%D1%8F%D0%B5%D1%82%D0%B5-UTextureRenderTarget2D-%D0%B2-C
@@ -124,103 +120,5 @@ void ALBMActor3D::Tick(float DeltaTime)
 	//FD3Q19CSManager::Get()->UpdateParameters(parameters);
 
 	_solverInterlayer->Step();
-
-
-	//if (URenderTarget != NULL)
-	//{
-	//	if (URenderTarget->GameThread_GetRenderTargetResource()->ReadLinearColorPixels(uBuffer))
-	//	{
-	//		int prob = 1;
-	//	}
-	//}
-
-	//if (PosRenderTarget != NULL)
-	//{
-	//	if (PosRenderTarget->GameThread_GetRenderTargetResource()->ReadLinearColorPixels(posBuffer))
-	//	{
-	//		int Nx = 400;
-	//		int x = 0;
-	//		int y = 0;
-	//		TArray<float> vels;
-
-	//		for (x = 0; x < 6; x++)
-	//		{
-	//			for (int i = 0; i < 9; i++)
-	//			{
-	//				int id = x + y * 9 * Nx + i * Nx;
-	//				vels.Add(posBuffer[id].R);
-	//			}
-	//		}
-
-	//		TArray<float> vels2;
-
-	//		for (x = 390; x < Nx; x++)
-	//		{
-	//			for (int i = 0; i < 9; i++)
-	//			{
-	//				int id = x + y * 9 * Nx + i * Nx;
-	//				vels2.Add(posBuffer[id].R);
-	//			}
-	//		}
-
-	//		int prob2 = 0;
-	//	}
-	//}
-		//// ->GetRenderTargetResource();
-		//TArray<FFloat16Color> ColorBuffer16;
-		//if (textureResource->ReadFloat16Pixels(ColorBuffer16))
-		//{
-		//	//float x = ColorBuffer16[0].R.GetFloat();
-		//	//float y = ColorBuffer16[0].G.GetFloat();
-		//	//float z = ColorBuffer16[0].B.GetFloat();
-
-		//	float x1 = ColorBuffer16[51].R.GetFloat();
-		//	float x2 = ColorBuffer16[1].R.GetFloat();
-		//	float x3 = ColorBuffer16[400].R.GetFloat();
-		//	float x4 = ColorBuffer16[401].R.GetFloat();
-		//	float x5 = ColorBuffer16[451].R.GetFloat();
-
-		//	TArray<float> arr;
-		//	for (int i = 0; i < 1600; i++)
-		//	{
-		//		arr.Add(ColorBuffer16[i].R.GetFloat());
-		//	}
-		//	TArray<float> arr2;
-		//	for (int i = 1500; i < 2400; i++)
-		//	{
-		//		arr2.Add(ColorBuffer16[i].R.GetFloat());
-		//	}
-		//	int prob = 0;
-		//	//float x1 = ColorBuffer16[1].R.GetFloat();
-		//	//float x1 = ColorBuffer16[1].R.GetFloat();
-
-		//	int Nx = 400;
-		//	int x = 0;
-		//	int y = 0;
-		//	TArray<float> vels;
-
-		//	for (x = 0; x < 13; x++)
-		//	{
-		//		for (int i = 0; i < 9; i++)
-		//		{
-		//			int id = x + y * 9 * Nx + i * Nx;
-		//			vels.Add(ColorBuffer16[id].R);
-		//		}
-		//	}
-
-		//	TArray<float> vels2;
-
-		//	for (x = 390; x < Nx; x++)
-		//	{
-		//		for (int i = 0; i < 9; i++)
-		//		{
-		//			int id = x + y * 9 * Nx + i * Nx;
-		//			vels2.Add(ColorBuffer16[id].R);
-		//		}
-		//	}
-
-		//	int prob2 = 0;
-		//}
-	//}
 }
 

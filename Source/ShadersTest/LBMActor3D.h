@@ -5,7 +5,7 @@
 #include "LBMActor3D.generated.h"
 
 UCLASS()
-class SHADERSTEST_API ALBMActor3D : public APawn
+class SHADERSTEST_API ALBMActor3D : public AActor
 {
 	GENERATED_BODY()
 
@@ -14,20 +14,11 @@ public:
 	UPROPERTY()
 		USceneComponent* Root;
 
-	UPROPERTY(EditAnywhere)
-		UStaticMeshComponent* static_mesh;	// Временно, для визуализации по срезам.
-
-	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shader)
-	//	class UTextureRenderTarget2D* FRenderTarget;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shader)
 		class UTextureRenderTargetVolume* URenderTarget;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shader)
 		class UTextureRenderTargetVolume* DensityRenderTarget;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shader)
-		class UVolumeTexture* ProbVolText;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shader)
 		FIntVector LatticeDims = FIntVector(64, 64, 64);
@@ -55,11 +46,6 @@ protected:
 
 	//AmarettoFileManager* _amarettoTest;
 	int* porousDataArray;
-
-
-	// for test:
-	TArray<FLinearColor> uBuffer;
-	TArray<FLinearColor> posBuffer;
 
 public:	
 	// Called every frame

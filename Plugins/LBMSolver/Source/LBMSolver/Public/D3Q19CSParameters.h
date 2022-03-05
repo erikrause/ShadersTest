@@ -12,10 +12,13 @@ struct FD3Q19CSParameters
 
 	// Текстура для хранения скоростей в узлах.
 	UTextureRenderTargetVolume* URenderTarget;
+	UTextureRenderTargetVolume* DensityRenderTarget;
 
 	// Test.
 	int Iteration = 0;
 	int* PorousDataArray;
+	//float DeltaTime = 0;
+	//float DeltaX = 0;
 
 	///// <summary>
 	///// Вернуть разрешение текстуры.
@@ -42,8 +45,8 @@ struct FD3Q19CSParameters
 	}
 
 	FD3Q19CSParameters() { }
-	FD3Q19CSParameters(UTextureRenderTargetVolume* uRenderTarget, int* porousDataArray, FIntVector latticeDims)
-		: URenderTarget(uRenderTarget)
+	FD3Q19CSParameters(UTextureRenderTargetVolume* uRenderTarget, int* porousDataArray, FIntVector latticeDims, UTextureRenderTargetVolume* densityRenderTarget)
+		: URenderTarget(uRenderTarget), DensityRenderTarget(densityRenderTarget)
 	{
 		PorousDataArray = porousDataArray;
 		//_cachedRenderTargetSize = URenderTarget ? FIntPoint(URenderTarget->SizeX, URenderTarget->SizeY) : FIntPoint::ZeroValue;

@@ -1,9 +1,15 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 using UnrealBuildTool;
+using System.IO;
 
 public class LBMSolver : ModuleRules
 {
+	private string poject_root_path
+	{
+		get { return Path.Combine(ModuleDirectory, "../.."); }
+	}
+
 	public LBMSolver(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;

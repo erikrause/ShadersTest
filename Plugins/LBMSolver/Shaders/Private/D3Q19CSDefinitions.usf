@@ -9,7 +9,7 @@ static const int inverse_indexes[19] =
 
 static const float weights[19] =
 {
-    1.0 / 3.0,
+    1.0 / 3.0,  // also d0.
     1.0 / 18.0, 1.0 / 18.0, 1.0 / 18.0, 1.0 / 18.0, 1.0 / 18.0, 1.0 / 18.0,
     1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0
 };
@@ -20,7 +20,9 @@ static const float PI = 3.14159265f;
 int Nx;
 int Ny;
 int Nz;
-
+float Rho0; // = 100; // average density
+static float Rho0_gas = 0.000018 * 10000; // Vapor density in lattice units.
+StructuredBuffer<int> PorousData;
 
 // Замкнуть пространство на противоположные грани.
 int3 closeField(int3 neighbour)
@@ -41,4 +43,9 @@ int3 closeField(int3 neighbour)
     }
     
     return newNeighbour;
+}
+
+bool isBoundary(const uint3 cellId)
+{
+    return PorousData[cellId.x + cellId.y * Nx + cellId.z * Nx * Ny] == 0;
 }

@@ -4,21 +4,12 @@
 
 #include "D3Q19CSDefinitions.usf"
 
-float Rho0; // = 100; // average density
 int Iteration;
 
 Texture3D<float> F_in;     // F with current t
 RWTexture3D<float> F_out;  // t + 1
-StructuredBuffer<int> PorousData;
 
 SamplerState F_SamplerState;    // не используется.
-
-bool isBoundary(const uint3 cellId)
-{
-    return PorousData[cellId.x + cellId.y * Nx + cellId.z * Nx * Ny] == 0;
-    //return x == 0 || x == 63 || y == 0 || y == 63 || z == 0 || z == 63;
-    //return ((pow((x - Nx / 4), 2) + pow((y - Ny / 2), 2)) < pow((Ny / 4), 2)); // || (x==62 || x==63);
-}
 
 void initArray(const uint3 cellId)
 {
@@ -31,7 +22,7 @@ void initArray(const uint3 cellId)
         
         
     // Задаем направление потока по направлению (1, 0, 0):
-    F_out[uint3(cellId.x, cellId.y, cellId.z * Q + 1)] += 2 * (1 + 0.2 * cos(2 * PI * cellId.x / Nx * 4));
+    //F_out[uint3(cellId.x, cellId.y, cellId.z * Q + 1)] += 2 * (1 + 0.2 * cos(2 * PI * cellId.x / Nx * 4));
         
     
     
@@ -55,6 +46,24 @@ void initArray(const uint3 cellId)
             F_out[uint3(cellId.x, cellId.y, cellId .z * Q + i)] = 0;
         }
     }
+    
+    // Инициализация ячеек с газом:
+    rho = 0;
+    if (cellId.z < 32)
+    {
+        for (int i = 0; i < Q; i++)
+        {
+            F_out[uint3(cellId.x, cellId.y, cellId.z * Q + i)] = 1;
+        }
+        for (i = 0; i < Q; i++)
+        {
+            rho += F_out[uint3(cellId.x, cellId.y, cellId.z * Q + i)];
+        }
+        for (i = 0; i < Q; i++)
+        {
+            F_out[uint3(cellId.x, cellId.y, cellId.z * Q + i)] *= Rho0_gas / rho;
+        }
+    }
 }
 
 
@@ -70,7 +79,7 @@ void Main(uint3 DTid : SV_DispatchThreadID)
     //const int x_tex = DTid.x;
     //const int y_tex = DTid.y * Q; // масштабируем Y {0..100} -> Y {0..900}, т.к. в одном узле сетки надо хранить 9 значений скорости (для каждого направления).
     
-    float3 u = float3(0, 0, 0);
+    //float3 u = float3(0, 0, 0);
     
     if (Iteration == 0)
     {

@@ -13,11 +13,10 @@ namespace CFD
 	{
 	public:
 
-		D3D11Interface(ID3D11Texture3D* velocityTexture, const dim3 resolution, const dim3 blockSize, ILogger* logger);
+		D3D11Interface(ID3D11Texture3D* velocityTexture, int* porousMedia, const dim3 resolution, const dim3 blockSize, ILogger* logger);
 		~D3D11Interface();
+		void Init();
 		void Step();
-
-		void InitializeData(const int* porousMedia);
 
 	protected:
 
@@ -28,7 +27,7 @@ namespace CFD
 		dim3 _cudaBlockSize;
 		dim3 _cudaGridSize;
 		dim3 _resolution;
-		int* _devPorousMedia;
+		cudaPitchedPtr _devPorousMedia;
 		ILogger* _logger;
 		CUDAErrorChecker* _cudaErrorChecker;
 		cudaArray_t _velocity;
@@ -37,7 +36,7 @@ namespace CFD
 		cudaSurfaceObject_t _velocitySurf = 0;
 		cudaSurfaceObject_t _latticeGridInSurf = 0;
 		cudaSurfaceObject_t _latticeGridOutSurf = 0;
-		
+		size_t _porousPitch;
 
 		int _iteration = 0;
 	};

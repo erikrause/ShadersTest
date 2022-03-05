@@ -9,10 +9,10 @@
 class LBMSOLVERCUDA_API D3Q19SolverInterlayer
 {
 public:
-	D3Q19SolverInterlayer(UTextureRenderTargetVolume* velocityTexture, FIntVector blockSize);
+	D3Q19SolverInterlayer(UTextureRenderTargetVolume* velocityTexture, int* porousMedia, FIntVector blockSize);
 	~D3Q19SolverInterlayer();
 	void Step();
-	void InitializeData(const int* porousMedia);
+	void Init();
 
 protected:
 	//ID3D11Texture3D* _d3d11Texture;

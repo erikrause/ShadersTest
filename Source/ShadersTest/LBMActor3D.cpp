@@ -109,7 +109,7 @@ void ALBMActor3D::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	iteration++;
-	if (iteration > 10)
+	if (iteration > 1000)
 	{
 		iteration = 0;
 		_solverInterlayer->InitializeData(porousDataArray);

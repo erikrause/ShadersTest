@@ -60,18 +60,18 @@ void ALBMActor3D::BeginPlay()
 
 	// Инициализация 3D текстуры для записи данных solver output в неё:
 	URenderTarget->OverrideFormat = PF_A32B32G32R32F;//PF_FloatRGB;
-	URenderTarget->SizeX = 64;
-	URenderTarget->SizeY = 64;
-	URenderTarget->SizeZ = 64;
+	URenderTarget->SizeX = _amaretto->Dims.X;
+	URenderTarget->SizeY = _amaretto->Dims.Y;
+	URenderTarget->SizeZ = _amaretto->Dims.Z;
 	URenderTarget->bCanCreateUAV = true;
 	URenderTarget->UpdateResource();
 
-	DensityRenderTarget->OverrideFormat = PF_R32_FLOAT;//PF_FloatRGB;
-	DensityRenderTarget->SizeX = 64;
-	DensityRenderTarget->SizeY = 64;
-	DensityRenderTarget->SizeZ = 64;
-	DensityRenderTarget->bCanCreateUAV = true;
-	DensityRenderTarget->UpdateResource();
+	//DensityRenderTarget->OverrideFormat = PF_R32_FLOAT;//PF_FloatRGB;
+	//DensityRenderTarget->SizeX = 64;
+	//DensityRenderTarget->SizeY = 64;
+	//DensityRenderTarget->SizeZ = 64;
+	//DensityRenderTarget->bCanCreateUAV = true;
+	//DensityRenderTarget->UpdateResource();
 
 
 	//// Костыль: пришлось скопировать ссылку на текстуру в UVolumeTexture, т.к. у VolumeRenderTargetDataInterface в Niagara нету сэмплера.
@@ -108,7 +108,8 @@ void ALBMActor3D::Tick(float DeltaTime)
 	if (iteration > 1000)
 	{
 		iteration = 0;
-		_solverInterlayer->Init();
+		//_solverInterlayer->Init();
+		//FGenericPlatformMisc::RequestExit(false);
 	}
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Iteration: %i"), iteration));
 

@@ -9,7 +9,7 @@
 #include <d3d11.h>
 
 
-D3Q19SolverInterlayer::D3Q19SolverInterlayer(UTextureRenderTargetVolume* velocityTexture, int* porousMedia, FIntVector blockSize)
+D3Q19SolverInterlayer::D3Q19SolverInterlayer(UTextureRenderTargetVolume* velocityTexture, UTextureRenderTargetVolume* densityTexture, int* porousMedia, FIntVector blockSize)
 {
 	//_blockSize = blockSize;
 	//_gridSize = ((VelocityTexture->SizeX + blockSize.x - 1) / blockSize.x, (VelocityTexture->SizeY + blockSize.y - 1) / blockSize.y, 1);
@@ -74,13 +74,16 @@ D3Q19SolverInterlayer::D3Q19SolverInterlayer(UTextureRenderTargetVolume* velocit
 	//	_cudaSolver->Step();
 	//}
 
-	//// _texture?
+	check(	velocityTexture->SizeX == densityTexture->SizeX && 
+			velocityTexture->SizeY == densityTexture->SizeY &&
+			velocityTexture->SizeZ == densityTexture->SizeZ)
+
 	dim3 blockSizeDims = dim3(blockSize.X, blockSize.Y, blockSize.Z);
-	_texture = (ID3D11Texture3D*)GetD3D11TextureFromRHITexture(velocityTexture->GameThread_GetRenderTargetResource()->TextureRHI)->GetResource();
-	_textureUE = velocityTexture;
+	ID3D11Texture3D* velocityD3D11Texture = (ID3D11Texture3D*)GetD3D11TextureFromRHITexture(velocityTexture->GameThread_GetRenderTargetResource()->TextureRHI)->GetResource();
+	ID3D11Texture3D* densityD3D11Texture = (ID3D11Texture3D*)GetD3D11TextureFromRHITexture(densityTexture->GameThread_GetRenderTargetResource()->TextureRHI)->GetResource();
 	dim3 resolution = dim3(velocityTexture->SizeX, velocityTexture->SizeY, velocityTexture->SizeZ);
 	_logger = new UnrealCUDALogger();
-	_cudaSolver = new CFD::D3D11Interface(_texture, porousMedia, resolution, blockSizeDims, _logger);
+	_cudaSolver = new CFD::D3D11Interface(velocityD3D11Texture, densityD3D11Texture, porousMedia, resolution, blockSizeDims, _logger);
 }
 
 D3Q19SolverInterlayer::~D3Q19SolverInterlayer()

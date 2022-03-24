@@ -15,10 +15,10 @@ public:
 		USceneComponent* Root;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shader)
-		class UTextureRenderTargetVolume* URenderTarget;
+		class UTextureRenderTargetVolume* VelocityRT;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shader)
-		class UTextureRenderTargetVolume* DensityRenderTarget;
+		class UTextureRenderTargetVolume* DensityRT;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shader)
 		FIntVector LatticeDims = FIntVector(64, 64, 64);

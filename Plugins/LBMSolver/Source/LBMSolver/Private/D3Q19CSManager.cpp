@@ -16,7 +16,7 @@ FD3Q19CSManager* FD3Q19CSManager::instance = nullptr;
 
 void FD3Q19CSManager::InitResources(UTextureRenderTargetVolume* VelocityTexture, UTextureRenderTargetVolume* densityTexture, UVolumeTexture* probVolText, FIntVector latticeDims, LbmPrecision lbmPrecision)
 {
-	// TODO: create UAV from URenderTarget:	auto bprob = cachedParams.URenderTarget->bCanCreateUAV;
+	// TODO: create UAV from VelocityRT:	auto bprob = cachedParams.VelocityRT->bCanCreateUAV;
 
 	//https://answers.unrealengine.com/questions/805711/write-texture2drhi-or-uav-to-render-target.html
 	FRHIResourceCreateInfo resourceCreateInfo;
@@ -202,7 +202,7 @@ void FD3Q19CSManager::Execute_RenderThread(FRHICommandListImmediate& RHICmdList,
 	//RHICmdList.CopyTexture(FPooledRenderTarget->GetRenderTargetItem().ShaderResourceTexture, cachedParams.FRenderTarget->GetRenderTargetResource()->TextureRHI, FRHICopyTextureInfo());
 	RHICmdList.CopyTexture(FOutputTexture, FInputTexture, FRHICopyTextureInfo());
 	RHICmdList.CopyTexture(UOutputTexture, ProbVolTexRHI, FRHICopyTextureInfo());
-	//RHICmdList.CopyTexture(UOutputTexture, cachedParams.URenderTarget->GetRenderTargetResource()->TextureRHI, FRHICopyTextureInfo());
+	//RHICmdList.CopyTexture(UOutputTexture, cachedParams.VelocityRT->GetRenderTargetResource()->TextureRHI, FRHICopyTextureInfo());
 	//RHICmdList.SetComputeShader(D3Q19CSDrift.GetComputeShader());	// зачем?
 	// TODO: unbind?
 

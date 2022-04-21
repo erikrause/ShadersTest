@@ -5,18 +5,23 @@
 #include <driver_types.h>
 #include "ILogger.h"
 #include "CUDAErrorChecker.h"
-#include <cuda_d3d11_interop.h>
+#include <cuda_runtime_api.h>
+#include "VolumeInfo.h"
 
 namespace CFD
 {
-	class D3D11Interface
+	class GraphicsSolver
 	{
 	public:
 
-		D3D11Interface(ID3D11Texture3D* velocityTexture, ID3D11Texture3D* densityTexture, int* porousMedia, const dim3 resolution, const dim3 blockSize, ILogger* logger);
-		~D3D11Interface();
+		GraphicsSolver(cudaGraphicsResource_t velocityResource, cudaGraphicsResource_t densityResource, int* porousMedia, const dim3 resolution, const dim3 blockSize, ILogger* logger);
+		~GraphicsSolver();
 		void Init();
 		void Step();
+
+		VolumeInfo DensityVolumeInfo;
+		VolumeInfo VelocityVolumeInfo;
+		VolumeInfo PorousVolumeInfo;
 
 	protected:
 

@@ -4,7 +4,7 @@
 //#include "Runtime\Windows\D3D11RHI\Private\D3D11StateCachePrivate.h"
 #include "Runtime\Windows\D3D11RHI\Public\D3D11State.h"
 #include <Runtime\Windows\D3D11RHI\Public\D3D11Resources.h>
-//#include <cuda_d3d11_interop.h>
+#include <cuda_d3d11_interop.h>
 //#include <helper_cuda.h>
 #include <d3d11.h>
 
@@ -79,11 +79,14 @@ D3Q19SolverInterlayer::D3Q19SolverInterlayer(UTextureRenderTargetVolume* velocit
 			velocityTexture->SizeZ == densityTexture->SizeZ)
 
 	dim3 blockSizeDims = dim3(blockSize.X, blockSize.Y, blockSize.Z);
-	ID3D11Texture3D* velocityD3D11Texture = (ID3D11Texture3D*)GetD3D11TextureFromRHITexture(velocityTexture->GameThread_GetRenderTargetResource()->TextureRHI)->GetResource();
+	ID3D11Texture3D* velocityD3D11Texture = (ID3D11Texture3D*)GetD3D11TextureFromRHITexture(velocityTexture->GameThread_GetRenderTargetResource()->TextureRHI)->GetResource();	// TODO: сделать проверку на текущий API.
 	ID3D11Texture3D* densityD3D11Texture = (ID3D11Texture3D*)GetD3D11TextureFromRHITexture(densityTexture->GameThread_GetRenderTargetResource()->TextureRHI)->GetResource();
 	dim3 resolution = dim3(velocityTexture->SizeX, velocityTexture->SizeY, velocityTexture->SizeZ);
 	_logger = new UnrealCUDALogger();
-	_cudaSolver = new CFD::D3D11Interface(velocityD3D11Texture, densityD3D11Texture, porousMedia, resolution, blockSizeDims, _logger);
+
+	cudaGraphicsD3D11RegisterResource(&_velocityResource, velocityD3D11Texture, cudaGraphicsRegisterFlagsNone);
+	cudaGraphicsD3D11RegisterResource(&_densityResource, densityD3D11Texture, cudaGraphicsRegisterFlagsNone);
+	_cudaSolver = new CFD::GraphicsSolver(_velocityResource, _densityResource, porousMedia, resolution, blockSizeDims, _logger);
 }
 
 D3Q19SolverInterlayer::~D3Q19SolverInterlayer()

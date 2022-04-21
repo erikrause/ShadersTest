@@ -31,7 +31,7 @@ ALBMActor3D::ALBMActor3D()
 	PorousBoundariesMeshes->SetStaticMesh(porousBoundariesMeshAsset.Object);
 	PorousBoundariesMeshes->SetMaterial(0, porousBoundariesMaterialAsset.Object);
 
-	TArray<FIntVector> boundariesCoords = _amaretto->GetBoundariesCoordinates();
+	TArray<FIntVector> boundariesCoords = _amaretto->GetBoundariesCoordinates(255);
 	for (FIntVector coord : boundariesCoords)
 	{
 		PorousBoundariesMeshes->AddInstance(FTransform(FRotator(), (FVector)coord));
@@ -113,6 +113,13 @@ void ALBMActor3D::Tick(float DeltaTime)
 	}
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Iteration: %i"), iteration));
 
+
+	//TArray<FColor> rawData;
+	//FTexture2DMipMap& Mip = VelocityRT->PlatformData->Mips[0];
+	//void* Data = Mip.BulkData.Lock(LOCK_READ_WRITE);
+	//FMemory::Memcpy(Data, rawData.GetData(), (64 * 64 * 64 * 4));
+	//Mip.BulkData.Unlock();
+
 	////Update parameters
 	//FD3Q19CSParameters parameters(VelocityRT, porousDataArray, _amaretto->Dims, DensityRT);
 	//parameters.Iteration = iteration;
@@ -121,5 +128,11 @@ void ALBMActor3D::Tick(float DeltaTime)
 	//FD3Q19CSManager::Get()->UpdateParameters(parameters);
 
 	_solverInterlayer->Step();
+
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Min porous: %.2f"), _solverInterlayer->GetPorousVolumeInfo().Min));
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Max porous: %.2f"), _solverInterlayer->GetPorousVolumeInfo().Max));
+	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Avg velocity: %.2f"), _solverInterlayer->GetVelocityVolumeInfo().Sum / (_amaretto->Dims.X * _amaretto->Dims.Y * _amaretto->Dims.Z)));
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Sum porous: %.2f"), _solverInterlayer->GetPorousVolumeInfo().Sum));
+	//GEngine->ClearOnScreenDebugMessages();
 }
 

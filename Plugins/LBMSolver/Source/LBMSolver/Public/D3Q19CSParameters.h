@@ -49,7 +49,7 @@ struct FD3Q19CSParameters
 		: URenderTarget(uRenderTarget), DensityRenderTarget(densityRenderTarget)
 	{
 		PorousDataArray = porousDataArray;
-		//_cachedRenderTargetSize = URenderTarget ? FIntPoint(URenderTarget->SizeX, URenderTarget->SizeY) : FIntPoint::ZeroValue;
+		//_cachedRenderTargetSize = VelocityRT ? FIntPoint(VelocityRT->SizeX, VelocityRT->SizeY) : FIntPoint::ZeroValue;
 		_latticeDims = latticeDims;
 
 	}

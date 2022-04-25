@@ -15,10 +15,10 @@ public:
 		USceneComponent* Root;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shader)
-		class UTextureRenderTargetVolume* URenderTarget;
+		class UTextureRenderTargetVolume* VelocityRT;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shader)
-		class UTextureRenderTargetVolume* DensityRenderTarget;
+		class UTextureRenderTargetVolume* DensityRT;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shader)
 		FIntVector LatticeDims = FIntVector(64, 64, 64);
@@ -37,7 +37,7 @@ public:
 protected:
 
 	class AmarettoFileManager* _amaretto;
-	class D3Q19SolverInterlayer* _solverInterlayer;
+	class UD3Q19SolverInterlayer* _solverInterlayer;
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

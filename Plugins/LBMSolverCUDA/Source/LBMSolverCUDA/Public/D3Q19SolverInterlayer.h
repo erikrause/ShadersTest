@@ -3,16 +3,24 @@
 #include "CoreMinimal.h"
 //#include <driver_types.h>
 #include <Runtime/Engine/Classes/Engine/TextureRenderTargetVolume.h>
-#include "D3D11Interface.h"
+#include <GraphicsSolver.h>
 #include "UnrealCUDALogger.h"
+#include <VolumeInfoDTO.h>
+#include "D3Q19SolverInterlayer.generated.h"
 
-class LBMSOLVERCUDA_API D3Q19SolverInterlayer
+UCLASS(BlueprintType)
+class LBMSOLVERCUDA_API UD3Q19SolverInterlayer : public UObject
 {
+	GENERATED_BODY()
+
 public:
-	D3Q19SolverInterlayer(UTextureRenderTargetVolume* velocityTexture, int* porousMedia, FIntVector blockSize);
-	~D3Q19SolverInterlayer();
+	UD3Q19SolverInterlayer();
+	void Init(UTextureRenderTargetVolume* velocityTexture, UTextureRenderTargetVolume* densityTexture, int* porousMedia, FIntVector blockSize);
+	~UD3Q19SolverInterlayer();
 	void Step();
-	void Init();
+	FVolumeInfoDTO GetVelocityVolumeInfo();
+	FVolumeInfoDTO GetDensityVolumeInfo();
+	FVolumeInfoDTO GetPorousVolumeInfo();
 
 protected:
 	//ID3D11Texture3D* _d3d11Texture;
@@ -20,8 +28,8 @@ protected:
 	//int* _devPorousMedia;
 	//dim3 _blockSize;
 	//dim3 _gridSize;
-	CFD::D3D11Interface* _cudaSolver;
+	CFD::GraphicsSolver* _cudaSolver;
 	UnrealCUDALogger* _logger;
-	ID3D11Texture3D* _texture;
-	UTextureRenderTargetVolume* _textureUE;
+	cudaGraphicsResource_t _velocityResource;
+	cudaGraphicsResource_t _densityResource;
 };

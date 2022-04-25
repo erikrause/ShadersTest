@@ -67,6 +67,7 @@ public class LBMSolverCUDA : ModuleRules
 
 		PublicIncludePaths.Add(Path.Combine(poject_root_path, custom_cuda_lib_include));
 		PublicAdditionalLibraries.Add(Path.Combine(poject_root_path, custom_cuda_lib_lib, "LBMSolver.lib"));
+		PublicAdditionalLibraries.Add(Path.Combine(poject_root_path, custom_cuda_lib_lib, "ParallelReduction.lib"));
 
 		string cuda_path = "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.5";
 		string cuda_include = "include";

@@ -85,8 +85,8 @@ void ALBMActor3D::BeginPlay()
 	//FD3Q19CSManager::Get()->BeginRendering();
 
 
-	_solverInterlayer = new D3Q19SolverInterlayer(VelocityRT, DensityRT, porousDataArray, FIntVector(16, 16, 1));
-	_solverInterlayer->Init();
+	_solverInterlayer = NewObject<UD3Q19SolverInterlayer>();
+	_solverInterlayer->Init(VelocityRT, DensityRT, porousDataArray, FIntVector(16, 16, 1));
 
 
 	// TODO: try to use ENQUEUE_RENDER_COMMAND: https://coderoad.ru/59638346/%D0%9A%D0%B0%D0%BA-%D0%B2%D1%8B-%D0%B4%D0%B8%D0%BD%D0%B0%D0%BC%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8-%D0%BE%D0%B1%D0%BD%D0%BE%D0%B2%D0%BB%D1%8F%D0%B5%D1%82%D0%B5-UTextureRenderTarget2D-%D0%B2-C
@@ -129,10 +129,14 @@ void ALBMActor3D::Tick(float DeltaTime)
 
 	_solverInterlayer->Step();
 
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Min porous: %.2f"), _solverInterlayer->GetPorousVolumeInfo().Min));
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Max porous: %.2f"), _solverInterlayer->GetPorousVolumeInfo().Max));
+
+	int totalCellsNum = _amaretto->Dims.X * _amaretto->Dims.Y * _amaretto->Dims.Z;
+	int solidCellsNum = _solverInterlayer->GetPorousVolumeInfo().Sum / _solverInterlayer->GetPorousVolumeInfo().Max;
+	int fluidCellsNum = totalCellsNum - solidCellsNum;
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Min velocity: %.4f"), _solverInterlayer->GetVelocityVolumeInfo().Min));
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Max velocity: %.4f"), _solverInterlayer->GetVelocityVolumeInfo().Max));
 	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Avg velocity: %.2f"), _solverInterlayer->GetVelocityVolumeInfo().Sum / (_amaretto->Dims.X * _amaretto->Dims.Y * _amaretto->Dims.Z)));
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Sum porous: %.2f"), _solverInterlayer->GetPorousVolumeInfo().Sum));
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Avg velocity: %.4f"), _solverInterlayer->GetVelocityVolumeInfo().Sum / fluidCellsNum));
 	//GEngine->ClearOnScreenDebugMessages();
 }
 

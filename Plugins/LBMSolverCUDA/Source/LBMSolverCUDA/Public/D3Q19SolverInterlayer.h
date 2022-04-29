@@ -18,8 +18,11 @@ public:
 	void Init(UTextureRenderTargetVolume* velocityTexture, UTextureRenderTargetVolume* densityTexture, int* porousMedia, FIntVector blockSize);
 	~UD3Q19SolverInterlayer();
 	void Step();
+	UFUNCTION(BlueprintCallable)
 	FVolumeInfoDTO GetVelocityVolumeInfo();
+	UFUNCTION(BlueprintCallable)
 	FVolumeInfoDTO GetDensityVolumeInfo();
+	UFUNCTION(BlueprintCallable)
 	FVolumeInfoDTO GetPorousVolumeInfo();
 
 protected:

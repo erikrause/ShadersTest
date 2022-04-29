@@ -85,8 +85,8 @@ void ALBMActor3D::BeginPlay()
 	//FD3Q19CSManager::Get()->BeginRendering();
 
 
-	_solverInterlayer = NewObject<UD3Q19SolverInterlayer>();
-	_solverInterlayer->Init(VelocityRT, DensityRT, porousDataArray, FIntVector(16, 16, 1));
+	SolverInterlayer = NewObject<UD3Q19SolverInterlayer>();
+	SolverInterlayer->Init(VelocityRT, DensityRT, porousDataArray, FIntVector(16, 16, 1));
 
 
 	// TODO: try to use ENQUEUE_RENDER_COMMAND: https://coderoad.ru/59638346/%D0%9A%D0%B0%D0%BA-%D0%B2%D1%8B-%D0%B4%D0%B8%D0%BD%D0%B0%D0%BC%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8-%D0%BE%D0%B1%D0%BD%D0%BE%D0%B2%D0%BB%D1%8F%D0%B5%D1%82%D0%B5-UTextureRenderTarget2D-%D0%B2-C
@@ -108,10 +108,10 @@ void ALBMActor3D::Tick(float DeltaTime)
 	if (iteration > 1000)
 	{
 		iteration = 0;
-		//_solverInterlayer->Init();
+		//SolverInterlayer->Init();
 		//FGenericPlatformMisc::RequestExit(false);
 	}
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Iteration: %i"), iteration));
+	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Iteration: %i"), iteration));
 
 
 	//TArray<FColor> rawData;
@@ -127,16 +127,16 @@ void ALBMActor3D::Tick(float DeltaTime)
 	////parameters.DeltaX = (0.000000016) / 64;	// TODO: add logic.
 	//FD3Q19CSManager::Get()->UpdateParameters(parameters);
 
-	_solverInterlayer->Step();
+	SolverInterlayer->Step();
 
 
-	int totalCellsNum = _amaretto->Dims.X * _amaretto->Dims.Y * _amaretto->Dims.Z;
-	int solidCellsNum = _solverInterlayer->GetPorousVolumeInfo().Sum / _solverInterlayer->GetPorousVolumeInfo().Max;
-	int fluidCellsNum = totalCellsNum - solidCellsNum;
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Min velocity: %.4f"), _solverInterlayer->GetVelocityVolumeInfo().Min));
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Max velocity: %.4f"), _solverInterlayer->GetVelocityVolumeInfo().Max));
-	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Avg velocity: %.2f"), _solverInterlayer->GetVelocityVolumeInfo().Sum / (_amaretto->Dims.X * _amaretto->Dims.Y * _amaretto->Dims.Z)));
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Avg velocity: %.4f"), _solverInterlayer->GetVelocityVolumeInfo().Sum / fluidCellsNum));
-	//GEngine->ClearOnScreenDebugMessages();
+	//int totalCellsNum = _amaretto->Dims.X * _amaretto->Dims.Y * _amaretto->Dims.Z;
+	//int solidCellsNum = SolverInterlayer->GetPorousVolumeInfo().Sum / SolverInterlayer->GetPorousVolumeInfo().Max;
+	//int fluidCellsNum = totalCellsNum - solidCellsNum;
+	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Min velocity: %.4f"), SolverInterlayer->GetVelocityVolumeInfo().Min));
+	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Max velocity: %.4f"), SolverInterlayer->GetVelocityVolumeInfo().Max));
+	////GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Avg velocity: %.2f"), SolverInterlayer->GetVelocityVolumeInfo().Sum / (_amaretto->Dims.X * _amaretto->Dims.Y * _amaretto->Dims.Z)));
+	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Avg velocity: %.4f"), SolverInterlayer->GetVelocityVolumeInfo().Sum / fluidCellsNum));
+	////GEngine->ClearOnScreenDebugMessages();
 }
 

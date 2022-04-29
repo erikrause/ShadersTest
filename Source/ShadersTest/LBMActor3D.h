@@ -29,6 +29,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		int iteration = -1;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	class UD3Q19SolverInterlayer* SolverInterlayer;
+
 public:
 	// Sets default values for this pawn's properties
 	ALBMActor3D();
@@ -37,7 +40,9 @@ public:
 protected:
 
 	class AmarettoFileManager* _amaretto;
-	class UD3Q19SolverInterlayer* _solverInterlayer;
+
+
+
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

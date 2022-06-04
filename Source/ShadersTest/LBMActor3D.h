@@ -26,8 +26,11 @@ public:
 	//UPROPERTY(BlueprintReadWrite, Category = Porous)
 		UInstancedStaticMeshComponent* PorousBoundariesMeshes;
 
+	UFUNCTION(BlueprintCallable, Category = CFD)
+		void InitializeLBM();
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		int iteration = -1;
+		int Iteration = -1;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	class UD3Q19SolverInterlayer* SolverInterlayer;

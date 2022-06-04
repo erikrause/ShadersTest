@@ -21,7 +21,7 @@ ALBMActor3D::ALBMActor3D()
 	RootComponent = Root;
 
 	FString projectDir = FPaths::ProjectDir();
-	_amaretto = new AmarettoFileManager(projectDir + FString("/Porous/img, c0=22.5, c=23.4.amaretto"));	//("/Porous/cylinder64.amaretto"));// //cylinder.amaretto")); //XYZtest.amaretto"));
+	_amaretto = new AmarettoFileManager(projectDir + FString("/Porous/Berea200.amaretto"));//img, c0=22.5, c=23.4.amaretto"));	//("/Porous/cylinder64.amaretto"));// //cylinder.amaretto")); //XYZtest.amaretto"));
 	porousDataArray = _amaretto->GetPorousDataArray();
 
 	PorousBoundariesMeshes = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("Porous boundaries"));
@@ -50,14 +50,11 @@ ALBMActor3D::ALBMActor3D()
 
 	//	PorousBoundariesMeshes->SetCustomDataValue(i, 0, i);
 	//}
+	SolverInterlayer = CreateDefaultSubobject<UD3Q19SolverInterlayer>(TEXT("Solver"));
 }
 
-// Called when the game starts or when spawned
-void ALBMActor3D::BeginPlay()
+void ALBMActor3D::InitializeLBM()
 {
-	Super::BeginPlay();
-
-
 	// Инициализация 3D текстуры для записи данных solver output в неё:
 	VelocityRT->OverrideFormat = PF_A32B32G32R32F;//PF_FloatRGB;
 	VelocityRT->SizeX = _amaretto->Dims.X;
@@ -85,8 +82,22 @@ void ALBMActor3D::BeginPlay()
 	//FD3Q19CSManager::Get()->BeginRendering();
 
 
-	SolverInterlayer = NewObject<UD3Q19SolverInterlayer>();
+	//SolverInterlayer = NewObject<UD3Q19SolverInterlayer>();
 	SolverInterlayer->Init(VelocityRT, DensityRT, porousDataArray, FIntVector(16, 16, 1));
+
+	Iteration = 0;
+}
+
+// Called when the game starts or when spawned
+void ALBMActor3D::BeginPlay()
+{
+	Super::BeginPlay();
+
+
+
+
+
+	InitializeLBM();
 
 
 	// TODO: try to use ENQUEUE_RENDER_COMMAND: https://coderoad.ru/59638346/%D0%9A%D0%B0%D0%BA-%D0%B2%D1%8B-%D0%B4%D0%B8%D0%BD%D0%B0%D0%BC%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8-%D0%BE%D0%B1%D0%BD%D0%BE%D0%B2%D0%BB%D1%8F%D0%B5%D1%82%D0%B5-UTextureRenderTarget2D-%D0%B2-C
@@ -104,14 +115,8 @@ void ALBMActor3D::BeginDestroy()
 void ALBMActor3D::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	iteration++;
-	if (iteration > 1000)
-	{
-		iteration = 0;
-		//SolverInterlayer->Init();
-		//FGenericPlatformMisc::RequestExit(false);
-	}
-	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Iteration: %i"), iteration));
+	Iteration++;
+	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Iteration: %i"), Iteration));
 
 
 	//TArray<FColor> rawData;
@@ -122,7 +127,7 @@ void ALBMActor3D::Tick(float DeltaTime)
 
 	////Update parameters
 	//FD3Q19CSParameters parameters(VelocityRT, porousDataArray, _amaretto->Dims, DensityRT);
-	//parameters.Iteration = iteration;
+	//parameters.Iteration = Iteration;
 	////parameters.DeltaTime = DeltaTime;
 	////parameters.DeltaX = (0.000000016) / 64;	// TODO: add logic.
 	//FD3Q19CSManager::Get()->UpdateParameters(parameters);

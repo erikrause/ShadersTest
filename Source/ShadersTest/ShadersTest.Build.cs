@@ -8,7 +8,7 @@ public class ShadersTest : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "LBMSolver", "Amaretto", "LBMSolverCUDA" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "LBMSolver", "Amaretto", "LBMSolverCUDA", "RHI", "Renderer", "RenderCore", "DigitalRockDomainModel", "FileManager" });
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });
 
